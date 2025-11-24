@@ -1,0 +1,22 @@
+# Data Pipeline Dependencies
+# Core libraries for data processing and analysis
+
+# Note: Standard library modules used:
+# - os, re, json, logging, collections, typing, datetime, argparse
+# These are all part of Python's standard library, no external dependencies required.
+
+# Text Cleaning Dependencies
+# NLTK is optional - the system will use fallback implementations if NLTK is not available
+nltk>=3.8  # Natural Language Toolkit (optional, for enhanced stop-word and stemming support)
+
+# Note: After installing NLTK, you may need to download stopwords data:
+# python -c "import nltk; nltk.download('stopwords')"
+# However, the system works without NLTK using custom Swahili stop-word lists and stemmers.
+
+# Dataset Structuring Dependencies
+numpy>=1.23.0  # Required for feature-target split and numerical operations
+
+# Optional dependencies for future enhancements:
+# pandas>=1.5.0  # For advanced data manipulation (if needed)
+# matplotlib>=3.6.0  # For visualizations (if needed)
+
