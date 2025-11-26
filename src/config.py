@@ -42,6 +42,8 @@ class TrainingConfig:
         lora_dropout: float = 0.1,
         
         # Training configuration
+        training_task: str = "classification",  # 'classification', 'mlm', 'causal'
+        mlm_probability: float = 0.15,
         batch_size: int = 16,
         learning_rate: float = 2e-5,
         num_epochs: int = 3,
@@ -49,6 +51,12 @@ class TrainingConfig:
         warmup_steps: int = 0,
         warmup_ratio: float = 0.1,
         max_grad_norm: float = 1.0,
+        
+        # Causal LM configuration
+        block_size: int = 512,
+        block_stride: int = 0,
+        causal_padding: bool = True,
+        shuffle_causal_chunks: bool = True,
         
         # Data configuration
         data_dir: str = "data",
@@ -67,6 +75,7 @@ class TrainingConfig:
         save_steps: Optional[int] = None,
         load_best_model_at_end: bool = True,
         metric_for_best_model: str = "accuracy",
+        metric_greater_is_better: bool = True,
         
         # Logging configuration
         logging_dir: str = "logs",
@@ -90,6 +99,8 @@ class TrainingConfig:
             lora_alpha: LoRA alpha (scaling factor)
             lora_target_modules: List of module names to apply LoRA to (e.g., ['query', 'value'])
             lora_dropout: LoRA dropout rate
+            training_task: Training objective ('classification' or 'mlm')
+            mlm_probability: Masking probability for MLM
             batch_size: Training batch size
             learning_rate: Learning rate
             num_epochs: Number of training epochs
@@ -97,6 +108,10 @@ class TrainingConfig:
             warmup_steps: Number of warmup steps (0 to use warmup_ratio)
             warmup_ratio: Ratio of warmup steps to total steps
             max_grad_norm: Maximum gradient norm for clipping
+            block_size: Sequence length for causal LM chunking
+            block_stride: Token overlap between consecutive chunks
+            causal_padding: Whether to pad final chunk to block_size
+            shuffle_causal_chunks: Whether to shuffle causal LM chunks
             data_dir: Directory containing data files
             output_dir: Directory for outputs
             checkpoint_dir: Directory for model checkpoints
@@ -137,6 +152,8 @@ class TrainingConfig:
         self.lora_dropout = lora_dropout
         
         # Training configuration
+        self.training_task = training_task
+        self.mlm_probability = mlm_probability
         self.batch_size = batch_size
         self.learning_rate = learning_rate
         self.num_epochs = num_epochs
@@ -144,6 +161,10 @@ class TrainingConfig:
         self.warmup_steps = warmup_steps
         self.warmup_ratio = warmup_ratio
         self.max_grad_norm = max_grad_norm
+        self.block_size = block_size
+        self.block_stride = block_stride
+        self.causal_padding = causal_padding
+        self.shuffle_causal_chunks = shuffle_causal_chunks
         
         # Data configuration
         self.data_dir = data_dir
@@ -162,6 +183,7 @@ class TrainingConfig:
         self.save_steps = save_steps
         self.load_best_model_at_end = load_best_model_at_end
         self.metric_for_best_model = metric_for_best_model
+        self.metric_greater_is_better = metric_greater_is_better
         
         # Logging configuration
         self.logging_dir = logging_dir
@@ -198,6 +220,12 @@ class TrainingConfig:
             'warmup_steps': self.warmup_steps,
             'warmup_ratio': self.warmup_ratio,
             'max_grad_norm': self.max_grad_norm,
+            'training_task': self.training_task,
+            'mlm_probability': self.mlm_probability,
+            'block_size': self.block_size,
+            'block_stride': self.block_stride,
+            'causal_padding': self.causal_padding,
+            'shuffle_causal_chunks': self.shuffle_causal_chunks,
             'data_dir': self.data_dir,
             'output_dir': self.output_dir,
             'checkpoint_dir': self.checkpoint_dir,
@@ -210,6 +238,7 @@ class TrainingConfig:
             'save_steps': self.save_steps,
             'load_best_model_at_end': self.load_best_model_at_end,
             'metric_for_best_model': self.metric_for_best_model,
+            'metric_greater_is_better': self.metric_greater_is_better,
             'logging_dir': self.logging_dir,
             'logging_steps': self.logging_steps,
             'report_to': self.report_to,

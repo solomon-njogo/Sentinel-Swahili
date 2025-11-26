@@ -1,6 +1,16 @@
 """
-Main Pipeline for Swahili Text Processing and Transformer Fine-tuning Preparation
-Orchestrates the complete pipeline from data loading to model-ready datasets.
+Main Pipeline for Swahili Text Processing and Transformer Fine-tuning
+Orchestrates the complete pipeline from data loading to model training.
+
+Usage:
+    # Data preparation only:
+    python main.py
+    
+    # Full pipeline (data prep + training):
+    python main.py --train
+    
+    # With custom configuration:
+    python main.py --train --model-name xlm-roberta-base --batch-size 32 --num-epochs 5
 """
 
 import argparse
@@ -9,6 +19,8 @@ import os
 import sys
 from datetime import datetime
 from typing import Dict, Any, Optional
+
+from transformers import DataCollatorForLanguageModeling
 
 # Suppress verbose logging during execution
 import logging
@@ -22,6 +34,7 @@ from src.config import TrainingConfig
 from src.device_utils import get_device, print_device_info, set_seed
 from src.tokenizer_utils import load_tokenizer, get_tokenizer_info
 from src.transformer_dataset import TransformerDataset, create_data_loader
+from src.model_trainer import load_model_with_lora, setup_trainer, train_model, evaluate_model, compute_metrics
 
 
 def print_section(title: str, width: int = 80):
@@ -193,7 +206,9 @@ def step3_configuration_setup(
     batch_size: Optional[int] = None,
     learning_rate: Optional[float] = None,
     use_swahili_model: bool = False,
-    swahili_model_key: str = 'davlan'
+    swahili_model_key: str = 'davlan',
+    training_task: Optional[str] = None,
+    mlm_probability: Optional[float] = None
 ) -> TrainingConfig:
     """Step 3: Set up training configuration."""
     print_section("STEP 3: Configuration Setup")
@@ -212,8 +227,17 @@ def step3_configuration_setup(
             config_kwargs['learning_rate'] = learning_rate
         config_kwargs['use_swahili_model'] = use_swahili_model
         config_kwargs['swahili_model_key'] = swahili_model_key
+        if training_task:
+            config_kwargs['training_task'] = training_task
+        if mlm_probability is not None:
+            config_kwargs['mlm_probability'] = mlm_probability
         
         config = TrainingConfig(**config_kwargs)
+    
+    if training_task:
+        config.training_task = training_task
+    if mlm_probability is not None:
+        config.mlm_probability = mlm_probability
     
     print(f"\n  Configuration Summary:")
     print(f"    Model: {config.model_name}")
@@ -229,6 +253,9 @@ def step3_configuration_setup(
     print(f"    Data directory: {config.data_dir}")
     print(f"    Output directory: {config.output_dir}")
     print(f"    Checkpoint directory: {config.checkpoint_dir}")
+    print(f"    Training task: {config.training_task}")
+    if config.training_task == 'mlm':
+        print(f"    MLM probability: {config.mlm_probability}")
     
     # Save config if path provided
     if config_path:
@@ -313,7 +340,7 @@ def step6_dataset_creation(
         print(f"\n  Creating {split} dataset...")
         
         texts = transformer_data[texts_key]
-        labels = transformer_data.get(labels_key)
+        labels = transformer_data.get(labels_key) if config.training_task == 'classification' else None
         
         # Create dataset
         dataset = TransformerDataset(
@@ -341,6 +368,8 @@ def step6_dataset_creation(
         print(f"    Batches: {len(data_loader):,}")
         if dataset.has_labels:
             print(f"    Classes: {dataset.get_num_classes()}")
+        elif config.training_task == 'mlm':
+            print(f"    Objective: Masked language modeling")
     
     print(f"\n[✓] Step 6 Complete: Datasets and DataLoaders ready")
     return {
@@ -380,6 +409,9 @@ def step7_final_summary(
     print(f"    Learning rate: {config.learning_rate}")
     print(f"    Epochs: {config.num_epochs}")
     print(f"    Device: {device}")
+    print(f"    Training task: {config.training_task}")
+    if config.training_task == 'mlm':
+        print(f"    MLM probability: {config.mlm_probability}")
     
     print(f"\n  Tokenizer:")
     tokenizer_info = get_tokenizer_info(tokenizer)
@@ -400,6 +432,138 @@ def step7_final_summary(
     print(f"  [✓] ALL PREPARATION STEPS COMPLETE")
     print(f"  [✓] READY FOR MODEL LOADING AND TRAINING")
     print("=" * 80 + "\n")
+
+
+def step8_model_loading(
+    config: TrainingConfig,
+    transformer_data: Dict[str, Any],
+    device: Any
+) -> Any:
+    """Step 8: Load model with LoRA adapters."""
+    print_section("STEP 8: Model Loading with LoRA")
+    
+    num_classes = None
+    print(f"\n  Loading model: {config.model_name}")
+
+    if config.training_task == 'classification':
+        if not transformer_data.get('label_mapping'):
+            print("\n  ERROR: No labels found in dataset. Cannot train classification model.")
+            return None
+        num_classes = len(transformer_data['label_mapping'])
+        print(f"  Number of classes: {num_classes}")
+    else:
+        print("  Objective: Masked language modeling (unsupervised)")
+        print(f"  MLM probability: {config.mlm_probability}")
+
+    print(f"  LoRA configuration:")
+    print(f"    Rank: {config.lora_rank}")
+    print(f"    Alpha: {config.lora_alpha}")
+    print(f"    Target modules: {config.lora_target_modules}")
+    
+    model = load_model_with_lora(
+        config=config,
+        num_labels=num_classes,
+        device=device
+    )
+    
+    print(f"\n[✓] Step 8 Complete: Model loaded with LoRA adapters")
+    return model
+
+
+def step9_training(
+    model: Any,
+    config: TrainingConfig,
+    datasets: Dict[str, Any],
+    tokenizer: Any,
+    transformer_data: Dict[str, Any]
+) -> Dict[str, Any]:
+    """Step 9: Train the model."""
+    print_section("STEP 9: Model Training")
+    
+    # Get datasets
+    train_dataset = datasets['datasets'].get('train')
+    eval_dataset = datasets['datasets'].get('valid')
+    test_dataset = datasets['datasets'].get('test')
+    
+    if not train_dataset:
+        print("\n  ERROR: No training dataset available.")
+        return {}
+    
+    print(f"\n  Training Configuration:")
+    print(f"    Train samples: {len(train_dataset):,}")
+    if eval_dataset:
+        print(f"    Valid samples: {len(eval_dataset):,}")
+    if test_dataset:
+        print(f"    Test samples:  {len(test_dataset):,}")
+    print(f"    Batch size: {config.batch_size}")
+    print(f"    Learning rate: {config.learning_rate}")
+    print(f"    Epochs: {config.num_epochs}")
+    
+    # Set up trainer
+    print(f"\n  Setting up trainer...")
+    data_collator = None
+    compute_metrics_fn = compute_metrics if config.training_task == 'classification' else None
+    if config.training_task == 'mlm':
+        data_collator = DataCollatorForLanguageModeling(
+            tokenizer=tokenizer,
+            mlm_probability=config.mlm_probability
+        )
+        config.metric_for_best_model = "eval_loss"
+        config.metric_greater_is_better = False
+    
+    trainer = setup_trainer(
+        model=model,
+        config=config,
+        train_dataset=train_dataset,
+        eval_dataset=eval_dataset,
+        tokenizer=tokenizer,
+        compute_metrics_fn=compute_metrics_fn,
+        data_collator=data_collator
+    )
+    
+    # Train model
+    print(f"\n  Starting training...")
+    training_results = train_model(
+        model=model,
+        trainer=trainer,
+        config=config
+    )
+    
+    # Evaluate on test set if available
+    if test_dataset and (config.training_task == 'mlm' or test_dataset.has_labels):
+        print(f"\n  Evaluating on test set...")
+        test_metrics = evaluate_model(
+            trainer=trainer,
+            dataset=test_dataset,
+            dataset_name="test"
+        )
+        training_results['test_metrics'] = test_metrics
+    
+    # Print summary
+    print(f"\n  Training Results:")
+    if training_results.get('train_metrics'):
+        train_metrics = training_results['train_metrics']
+        for key, value in train_metrics.items():
+            if isinstance(value, float):
+                print(f"    {key}: {value:.4f}")
+    if training_results.get('eval_metrics'):
+        eval_metrics = training_results['eval_metrics']
+        for key, value in eval_metrics.items():
+            if isinstance(value, float):
+                print(f"    {key}: {value:.4f}")
+    if training_results.get('test_metrics'):
+        test_metrics = training_results['test_metrics']
+        for key, value in test_metrics.items():
+            if isinstance(value, float):
+                print(f"    {key}: {value:.4f}")
+    
+    if training_results.get('best_model_path'):
+        print(f"\n  Best model saved to: {training_results['best_model_path']}")
+    if training_results.get('final_model_path'):
+        print(f"  Final model saved to: {training_results['final_model_path']}")
+    
+    print(f"\n[✓] Step 9 Complete: Model training finished")
+    return training_results
 
 
 def main():
@@ -461,6 +625,39 @@ def main():
         default=None,
         help='Learning rate (default: 2e-5)'
     )
+    parser.add_argument(
+        '--train',
+        action='store_true',
+        help='Train the model after data preparation (default: False)'
+    )
+    parser.add_argument(
+        '--use-swahili-model',
+        action='store_true',
+        help='Use Swahili-specific model'
+    )
+    parser.add_argument(
+        '--swahili-model-key',
+        type=str,
+        default='davlan',
+        help='Swahili model key (default: davlan)'
+    )
+    parser.add_argument(
+        '--skip-eval',
+        action='store_true',
+        help='Skip evaluation on test set during training'
+    )
+    parser.add_argument(
+        '--training-task',
+        choices=['classification', 'mlm'],
+        default='classification',
+        help='Choose training objective (default: classification)'
+    )
+    parser.add_argument(
+        '--mlm-probability',
+        type=float,
+        default=0.15,
+        help='Masking probability for MLM objective'
+    )
     
     args = parser.parse_args()
     
@@ -482,8 +679,10 @@ def main():
             model_name=args.model_name,
             batch_size=args.batch_size,
             learning_rate=args.learning_rate,
-            use_swahili_model=getattr(args, 'use_swahili_model', False),
-            swahili_model_key=getattr(args, 'swahili_model_key', 'davlan')
+            use_swahili_model=args.use_swahili_model,
+            swahili_model_key=args.swahili_model_key,
+            training_task=args.training_task,
+            mlm_probability=args.mlm_probability
         )
         
         # Step 5: Tokenizer Setup (moved earlier for use in Step 1)
@@ -522,6 +721,31 @@ def main():
             device=device,
             tokenizer=tokenizer
         )
+        
+        # Steps 8-9: Model Loading and Training (if --train flag is set)
+        if args.train:
+            model = step8_model_loading(
+                config=config,
+                transformer_data=transformer_data,
+                device=device
+            )
+            
+            if model is not None:
+                training_results = step9_training(
+                    model=model,
+                    config=config,
+                    datasets=dataset_dict,
+                    tokenizer=tokenizer,
+                    transformer_data=transformer_data
+                )
+                
+                print("\n" + "=" * 80)
+                print("  [✓] COMPLETE PIPELINE FINISHED")
+                print("  [✓] DATA PREPROCESSING -> MODEL TRAINING")
+                print("=" * 80 + "\n")
+        else:
+            print("\n  Note: Use --train flag to train the model after data preparation")
+            print("  Example: python main.py --train\n")
         
         print(f"  Completed at: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
         

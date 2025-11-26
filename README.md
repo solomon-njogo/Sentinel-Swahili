@@ -67,36 +67,62 @@ python -c "import nltk; nltk.download('stopwords')"
 Process all default datasets (train.txt, test.txt, valid.txt):
 
 ```bash
-python main.py
+py main.py
 ```
 
-### Advanced Usage
+### RoBERTa Fine-tuning for Swahili Conversation
+
+The project now bundles a `train.py` script that fine-tunes transformer models (including `roberta-base`) with LoRA adapters. Three training objectives are supported:
+
+- `classification`: original supervised intent classification flow
+- `mlm`: masked-language modeling
+- `causal`: auto-regressive conversational modeling (recommended for Swahili dialogue)
+
+Run causal fine-tuning on the bundled corpora:
+
+```bash
+py train.py --training-task causal --model-name roberta-base --data-dir data \
+  --block-size 512 --num-epochs 3 --learning-rate 2e-5
+```
+
+Key arguments:
+
+- `--training-task {classification, mlm, causal}`
+- `--model-name` / `--tokenizer-name`
+- `--block-size` and `--block-stride` (causal chunking)
+- `--no-causal-padding`, `--no-shuffle-chunks`
+- `--mlm-probability` (for MLM task)
+- Standard hyperparameters: `--batch-size`, `--learning-rate`, `--num-epochs`
+
+The script automatically reads `data/train.txt`, `data/valid.txt`, and `data/test.txt`, builds the appropriate dataset (including token-level chunking for causal LM), and saves checkpoints under `outputs/` and `checkpoints/`.
+
+### Advanced `main.py` Usage
 
 Process specific files:
 
 ```bash
-python main.py --files train.txt test.txt
+py main.py --files train.txt test.txt
 ```
 
 Specify custom data directory:
 
 ```bash
-python main.py --data-dir /path/to/data
+py main.py --data-dir /path/to/data
 ```
 
 Generate detailed JSON reports:
 
 ```bash
-python main.py --save-report
+py main.py --save-report
 ```
 
 Save reports to custom directory:
 
 ```bash
-python main.py --save-report --output-dir /path/to/reports
+py main.py --save-report --output-dir /path/to/reports
 ```
 
-### Command Line Arguments
+Key arguments:
 
 - `--data-dir`: Directory containing data files (default: `data`)
 - `--output-dir`: Directory to save reports (default: `reports`)
