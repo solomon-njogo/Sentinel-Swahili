@@ -1,33 +1,411 @@
 """
-Main script for Swahili Text Data Pipeline
-Orchestrates data ingestion, parsing, and inspection.
+Main Pipeline for Swahili Text Processing and Transformer Fine-tuning Preparation
+Orchestrates the complete pipeline from data loading to model-ready datasets.
 """
 
 import argparse
 import json
 import os
+import sys
 from datetime import datetime
-from data_pipeline import DataPipeline
-from data_inspector import DataInspector
+from typing import Dict, Any, Optional
+
+# Suppress verbose logging during execution
+import logging
+logging.basicConfig(level=logging.WARNING, format='%(levelname)s: %(message)s')
+
+# Import pipeline modules
+from src.data_pipeline import DataPipeline
+from src.data_inspector import DataInspector
+from src.transformer_preprocessing import prepare_transformer_data
+from src.config import TrainingConfig
+from src.device_utils import get_device, print_device_info, set_seed
+from src.tokenizer_utils import load_tokenizer, get_tokenizer_info
+from src.transformer_dataset import TransformerDataset, create_data_loader
+
+
+def print_section(title: str, width: int = 80):
+    """Print a formatted section header."""
+    print("\n" + "=" * width)
+    print(f"  {title}")
+    print("=" * width)
+
+
+def print_subsection(title: str, width: int = 80):
+    """Print a formatted subsection header."""
+    print("\n" + "-" * width)
+    print(f"  {title}")
+    print("-" * width)
 
 
 def save_report(stats: dict, output_path: str):
-    """
-    Save statistics report to JSON file.
-    
-    Args:
-        stats: Statistics dictionary
-        output_path: Path to save the report
-    """
+    """Save statistics report to JSON file."""
     with open(output_path, 'w', encoding='utf-8') as f:
         json.dump(stats, f, indent=2, ensure_ascii=False)
-    print(f"\nReport saved to: {output_path}")
+        print(f"\n[✓] Report saved to: {output_path}")
+
+
+def step1_data_loading_and_inspection(
+    data_dir: str,
+    files: list,
+    output_dir: str,
+    save_report_flag: bool,
+    tokenizer: Optional[Any] = None
+) -> Dict[str, Any]:
+    """Step 1: Load and inspect raw data."""
+    print_section("STEP 1: Data Loading and Inspection")
+    
+    pipeline = DataPipeline(data_dir=data_dir)
+    inspector = DataInspector()
+    all_results = {}
+    
+    for filename in files:
+        print_subsection(f"Processing: {filename}")
+        
+        try:
+            # Get basic file info
+            file_info = pipeline.get_dataset_info(filename)
+            print(f"\n  File Information:")
+            for key, value in file_info.items():
+                if key != "error":
+                    if isinstance(value, float):
+                        print(f"    {key}: {value:.2f}")
+                    else:
+                        print(f"    {key}: {value:,}" if isinstance(value, int) else f"    {key}: {value}")
+            
+            if "error" in file_info:
+                print(f"    ERROR: {file_info['error']}")
+                continue
+            
+            # Parse dataset
+            print(f"\n  Parsing dataset...")
+            features, labels, label_format = pipeline.parse_dataset(filename)
+            
+            if not features:
+                print(f"    WARNING: No data found in {filename}")
+                continue
+            
+            # Inspect dataset (with optional tokenizer for tokenized length analysis)
+            print(f"  Inspecting dataset...")
+            stats = inspector.inspect_dataset(
+                features, 
+                labels if any(l is not None for l in labels) else None,
+                tokenizer=tokenizer
+            )
+            
+            # Add metadata
+            stats["metadata"] = {
+                "filename": filename,
+                "label_format": label_format,
+                "processing_date": datetime.now().isoformat(),
+                "file_info": file_info
+            }
+            
+            # Print summary
+            dataset_name = filename.replace('.txt', '').upper()
+            print(f"\n  Dataset Summary ({dataset_name}):")
+            text_stats = stats.get('text_statistics', {})
+            print(f"    Total samples: {text_stats.get('total_samples', len(features)):,}")
+            if text_stats:
+                print(f"    Avg characters: {text_stats.get('char_length', {}).get('mean', 0):.1f}")
+                print(f"    Avg words: {text_stats.get('word_length', {}).get('mean', 0):.1f}")
+            
+            # Print tokenized length statistics if available
+            if 'tokenized_length_statistics' in stats and stats['tokenized_length_statistics']:
+                token_stats = stats['tokenized_length_statistics']
+                print(f"\n  Tokenized Length Statistics (after transformer tokenization):")
+                print(f"    Mean: {token_stats.get('mean', 0):.1f} tokens")
+                print(f"    Median: {token_stats.get('median', 0):.1f} tokens")
+                print(f"    P95: {token_stats.get('p95', 0):.1f} tokens")
+                print(f"    Max: {token_stats.get('max', 0):.1f} tokens")
+                recommended = token_stats.get('recommended_max_length', 512)
+                print(f"    Recommended max_length: {recommended} tokens")
+            
+            # Store results
+            all_results[filename] = stats
+            
+            # Save individual report if requested
+            if save_report_flag:
+                report_path = os.path.join(
+                    output_dir,
+                    f"{filename.replace('.txt', '')}_report.json"
+                )
+                save_report(stats, report_path)
+        
+        except FileNotFoundError as e:
+            print(f"    ERROR: {e}")
+        except Exception as e:
+            print(f"    ERROR processing {filename}: {e}")
+            import traceback
+            traceback.print_exc()
+    
+    # Save combined report if requested
+    if save_report_flag and all_results:
+        combined_report_path = os.path.join(output_dir, "combined_report.json")
+        combined_report = {
+            "processing_date": datetime.now().isoformat(),
+            "datasets": all_results,
+            "summary": {
+                "total_datasets": len(all_results),
+                "dataset_names": list(all_results.keys())
+            }
+        }
+        save_report(combined_report, combined_report_path)
+    
+    print(f"\n[✓] Step 1 Complete: Data loaded and inspected")
+    return all_results
+
+
+def step2_transformer_data_preparation(
+    data_dir: str,
+    use_raw_text: bool = True
+) -> Dict[str, Any]:
+    """Step 2: Prepare data for transformer models."""
+    print_section("STEP 2: Transformer Data Preparation")
+    
+    print(f"\n  Preparing data for transformer models...")
+    print(f"  Using raw text (recommended for transformers): {use_raw_text}")
+    
+    transformer_data = prepare_transformer_data(
+        data_dir=data_dir,
+        use_raw_text=use_raw_text
+    )
+    
+    print(f"\n  Data Preparation Summary:")
+    print(f"    Train samples: {len(transformer_data['texts_train']):,}")
+    print(f"    Test samples:  {len(transformer_data['texts_test']):,}")
+    print(f"    Valid samples: {len(transformer_data['texts_valid']):,}")
+    
+    if transformer_data['label_mapping']:
+        num_classes = len(transformer_data['label_mapping'])
+        print(f"    Number of classes: {num_classes}")
+        print(f"    Label mapping: {transformer_data['label_mapping']}")
+    else:
+        print(f"    Labels: None (unlabeled dataset)")
+    
+    print(f"\n[✓] Step 2 Complete: Data prepared for transformers")
+    return transformer_data
+
+
+def step3_configuration_setup(
+    config_path: Optional[str] = None,
+    model_name: Optional[str] = None,
+    batch_size: Optional[int] = None,
+    learning_rate: Optional[float] = None,
+    use_swahili_model: bool = False,
+    swahili_model_key: str = 'davlan'
+) -> TrainingConfig:
+    """Step 3: Set up training configuration."""
+    print_section("STEP 3: Configuration Setup")
+    
+    if config_path and os.path.exists(config_path):
+        print(f"\n  Loading configuration from: {config_path}")
+        config = TrainingConfig.load(config_path)
+    else:
+        print(f"\n  Creating default configuration...")
+        config_kwargs = {}
+        if model_name:
+            config_kwargs['model_name'] = model_name
+        if batch_size:
+            config_kwargs['batch_size'] = batch_size
+        if learning_rate:
+            config_kwargs['learning_rate'] = learning_rate
+        config_kwargs['use_swahili_model'] = use_swahili_model
+        config_kwargs['swahili_model_key'] = swahili_model_key
+        
+        config = TrainingConfig(**config_kwargs)
+    
+    print(f"\n  Configuration Summary:")
+    print(f"    Model: {config.model_name}")
+    if config.use_swahili_model:
+        print(f"    Swahili-specific model: Yes ({config.swahili_model_key})")
+    print(f"    Tokenizer: {config.tokenizer_name}")
+    print(f"    Max length: {config.max_length}")
+    print(f"    Batch size: {config.batch_size}")
+    print(f"    Learning rate: {config.learning_rate}")
+    print(f"    Epochs: {config.num_epochs}")
+    print(f"    LoRA rank: {config.lora_rank}")
+    print(f"    LoRA alpha: {config.lora_alpha}")
+    print(f"    Data directory: {config.data_dir}")
+    print(f"    Output directory: {config.output_dir}")
+    print(f"    Checkpoint directory: {config.checkpoint_dir}")
+    
+    # Save config if path provided
+    if config_path:
+        config.save(config_path)
+        print(f"\n  ✓ Configuration saved to: {config_path}")
+    
+    print(f"\n[✓] Step 3 Complete: Configuration ready")
+    return config
+
+
+def step4_device_setup(config: TrainingConfig) -> Any:
+    """Step 4: Set up device and environment."""
+    print_section("STEP 4: Device and Environment Setup")
+    
+    # Set random seed
+    print(f"\n  Setting random seed: {config.seed}")
+    set_seed(config.seed)
+    
+    # Get device
+    print(f"\n  Detecting device...")
+    device = get_device(use_cuda=config.use_cuda, device=config.device)
+    
+    # Print device info
+    print_device_info()
+    
+    print(f"\n[✓] Step 4 Complete: Device ready ({device})")
+    return device
+
+
+def step5_tokenizer_setup(config: TrainingConfig) -> Any:
+    """Step 5: Load and configure tokenizer."""
+    print_section("STEP 5: Tokenizer Setup")
+    
+    print(f"\n  Loading tokenizer: {config.tokenizer_name}")
+    tokenizer = load_tokenizer(
+        model_name=config.tokenizer_name,
+        use_fast=True
+    )
+    
+    # Get tokenizer info
+    from src.tokenizer_utils import explain_special_tokens
+    tokenizer_info = get_tokenizer_info(tokenizer)
+    print(f"\n  Tokenizer Information:")
+    print(f"    Model: {tokenizer_info['model_name']}")
+    print(f"    Vocab size: {tokenizer_info['vocab_size']:,}")
+    print(f"    Max length: {tokenizer_info['model_max_length']:,}")
+    print(f"    Pad token: {tokenizer_info['pad_token']}")
+    print(f"    Fast tokenizer: {tokenizer_info['is_fast']}")
+    
+    # Explain special tokens
+    special_tokens = explain_special_tokens(tokenizer)
+    if special_tokens:
+        print(f"\n  Special Tokens:")
+        for key, info in special_tokens.items():
+            print(f"    {key}: {info['token']} - {info['name']} ({info['purpose']})")
+    
+    print(f"\n[✓] Step 5 Complete: Tokenizer ready")
+    return tokenizer
+
+
+def step6_dataset_creation(
+    transformer_data: Dict[str, Any],
+    tokenizer: Any,
+    config: TrainingConfig
+) -> Dict[str, Any]:
+    """Step 6: Create PyTorch datasets and data loaders."""
+    print_section("STEP 6: Dataset and DataLoader Creation")
+    
+    datasets = {}
+    data_loaders = {}
+    
+    splits = ['train', 'valid', 'test']
+    
+    for split in splits:
+        texts_key = f'texts_{split}'
+        labels_key = f'labels_{split}'
+        
+        if texts_key not in transformer_data or not transformer_data[texts_key]:
+            print(f"\n  Skipping {split} (no data)")
+            continue
+        
+        print(f"\n  Creating {split} dataset...")
+        
+        texts = transformer_data[texts_key]
+        labels = transformer_data.get(labels_key)
+        
+        # Create dataset
+        dataset = TransformerDataset(
+            texts=texts,
+            labels=labels,
+            tokenizer=tokenizer,
+            max_length=config.max_length
+        )
+        
+        datasets[split] = dataset
+        
+        # Create data loader
+        shuffle = (split == 'train')
+        data_loader = create_data_loader(
+            dataset=dataset,
+            batch_size=config.batch_size,
+            shuffle=shuffle,
+            num_workers=config.dataloader_num_workers,
+            pin_memory=config.dataloader_pin_memory
+        )
+        
+        data_loaders[split] = data_loader
+        
+        print(f"    Samples: {len(dataset):,}")
+        print(f"    Batches: {len(data_loader):,}")
+        if dataset.has_labels:
+            print(f"    Classes: {dataset.get_num_classes()}")
+    
+    print(f"\n[✓] Step 6 Complete: Datasets and DataLoaders ready")
+    return {
+        'datasets': datasets,
+        'data_loaders': data_loaders
+    }
+
+
+def step7_final_summary(
+    config: TrainingConfig,
+    transformer_data: Dict[str, Any],
+    datasets: Dict[str, Any],
+    device: Any,
+    tokenizer: Any
+):
+    """Step 7: Print final summary of everything ready for model loading."""
+    print_section("STEP 7: Final Summary - Ready for Model Loading")
+    
+    print(f"\n  All components are ready for transformer fine-tuning!")
+    
+    print(f"\n  Data Summary:")
+    print(f"    Train: {len(transformer_data['texts_train']):,} samples")
+    print(f"    Valid: {len(transformer_data['texts_valid']):,} samples")
+    print(f"    Test:  {len(transformer_data['texts_test']):,} samples")
+    
+    if transformer_data['label_mapping']:
+        print(f"    Classes: {len(transformer_data['label_mapping'])}")
+    
+    print(f"\n  Model Configuration:")
+    print(f"    Base model: {config.model_name}")
+    print(f"    Max sequence length: {config.max_length}")
+    print(f"    LoRA rank: {config.lora_rank}")
+    print(f"    LoRA alpha: {config.lora_alpha}")
+    
+    print(f"\n  Training Configuration:")
+    print(f"    Batch size: {config.batch_size}")
+    print(f"    Learning rate: {config.learning_rate}")
+    print(f"    Epochs: {config.num_epochs}")
+    print(f"    Device: {device}")
+    
+    print(f"\n  Tokenizer:")
+    tokenizer_info = get_tokenizer_info(tokenizer)
+    print(f"    Model: {tokenizer_info['model_name']}")
+    print(f"    Vocab size: {tokenizer_info['vocab_size']:,}")
+    
+    print(f"\n  Datasets:")
+    for split, dataset in datasets['datasets'].items():
+        print(f"    {split}: {len(dataset):,} samples, {len(datasets['data_loaders'][split]):,} batches")
+    
+    print(f"\n  Next Steps:")
+    print(f"    1. Load pre-trained model: {config.model_name}")
+    print(f"    2. Configure LoRA adapter with rank={config.lora_rank}, alpha={config.lora_alpha}")
+    print(f"    3. Set up optimizer with lr={config.learning_rate}")
+    print(f"    4. Begin training loop using the prepared DataLoaders")
+    
+    print(f"\n" + "=" * 80)
+    print(f"  [✓] ALL PREPARATION STEPS COMPLETE")
+    print(f"  [✓] READY FOR MODEL LOADING AND TRAINING")
+    print("=" * 80 + "\n")
 
 
 def main():
-    """Main execution function."""
+    """Main execution function - orchestrates the complete pipeline."""
     parser = argparse.ArgumentParser(
-        description="Swahili Text Data Pipeline - Data Engineering and Preprocessing"
+        description="Swahili Text Processing Pipeline - Complete Pipeline from Data to Model-Ready Datasets"
     )
     parser.add_argument(
         '--data-dir',
@@ -42,6 +420,12 @@ def main():
         help='Directory to save reports (default: reports)'
     )
     parser.add_argument(
+        '--config-path',
+        type=str,
+        default=None,
+        help='Path to load/save configuration JSON (optional)'
+    )
+    parser.add_argument(
         '--files',
         type=str,
         nargs='+',
@@ -51,7 +435,31 @@ def main():
     parser.add_argument(
         '--save-report',
         action='store_true',
-        help='Save detailed report to JSON file'
+        help='Save detailed reports to JSON files'
+    )
+    parser.add_argument(
+        '--use-raw-text',
+        action='store_true',
+        default=True,
+        help='Use raw text for transformers (default: True, recommended)'
+    )
+    parser.add_argument(
+        '--model-name',
+        type=str,
+        default=None,
+        help='Model name to use (default: xlm-roberta-base)'
+    )
+    parser.add_argument(
+        '--batch-size',
+        type=int,
+        default=None,
+        help='Batch size (default: 16)'
+    )
+    parser.add_argument(
+        '--learning-rate',
+        type=float,
+        default=None,
+        help='Learning rate (default: 2e-5)'
     )
     
     args = parser.parse_args()
@@ -60,86 +468,71 @@ def main():
     if args.save_report:
         os.makedirs(args.output_dir, exist_ok=True)
     
-    # Initialize pipeline and inspector
-    pipeline = DataPipeline(data_dir=args.data_dir)
-    inspector = DataInspector()
+    # Print header
+    print("\n" + "=" * 80)
+    print("  SWAHILI TEXT PROCESSING PIPELINE")
+    print("  Complete Pipeline: Data Loading -> Model-Ready Datasets")
+    print("=" * 80)
+    print(f"\n  Started at: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
     
-    # Process each dataset
-    all_results = {}
-    
-    for filename in args.files:
-        print(f"\n{'='*80}")
-        print(f"Processing: {filename}")
-        print(f"{'='*80}")
+    try:
+        # Step 3: Configuration Setup (moved earlier to get model name for tokenizer)
+        config = step3_configuration_setup(
+            config_path=args.config_path,
+            model_name=args.model_name,
+            batch_size=args.batch_size,
+            learning_rate=args.learning_rate,
+            use_swahili_model=getattr(args, 'use_swahili_model', False),
+            swahili_model_key=getattr(args, 'swahili_model_key', 'davlan')
+        )
         
-        try:
-            # Get basic file info
-            file_info = pipeline.get_dataset_info(filename)
-            print(f"\nFile Information:")
-            for key, value in file_info.items():
-                if key != "error":
-                    print(f"  {key}: {value}")
-            
-            if "error" in file_info:
-                print(f"  ERROR: {file_info['error']}")
-                continue
-            
-            # Parse dataset
-            features, labels, label_format = pipeline.parse_dataset(filename)
-            
-            if not features:
-                print(f"  WARNING: No data found in {filename}")
-                continue
-            
-            # Inspect dataset
-            stats = inspector.inspect_dataset(features, labels if any(l is not None for l in labels) else None)
-            
-            # Add metadata
-            stats["metadata"] = {
-                "filename": filename,
-                "label_format": label_format,
-                "processing_date": datetime.now().isoformat(),
-                "file_info": file_info
-            }
-            
-            # Print summary
-            dataset_name = filename.replace('.txt', '').upper()
-            inspector.print_summary(stats, dataset_name)
-            
-            # Store results
-            all_results[filename] = stats
-            
-            # Save individual report if requested
-            if args.save_report:
-                report_path = os.path.join(
-                    args.output_dir,
-                    f"{filename.replace('.txt', '')}_report.json"
-                )
-                save_report(stats, report_path)
+        # Step 5: Tokenizer Setup (moved earlier for use in Step 1)
+        tokenizer = step5_tokenizer_setup(config)
         
-        except FileNotFoundError as e:
-            print(f"  ERROR: {e}")
-        except Exception as e:
-            print(f"  ERROR processing {filename}: {e}")
-            import traceback
-            traceback.print_exc()
-    
-    # Save combined report if requested
-    if args.save_report and all_results:
-        combined_report_path = os.path.join(args.output_dir, "combined_report.json")
-        combined_report = {
-            "processing_date": datetime.now().isoformat(),
-            "datasets": all_results,
-            "summary": {
-                "total_datasets": len(all_results),
-                "dataset_names": list(all_results.keys())
-            }
-        }
-        save_report(combined_report, combined_report_path)
-    
-    print(f"\n{'='*80}")
-    print("Data Pipeline Processing Complete!")
-    print(f"{'='*80}\n")
+        # Step 1: Data Loading and Inspection (now with tokenizer for tokenized length analysis)
+        inspection_results = step1_data_loading_and_inspection(
+            data_dir=args.data_dir,
+            files=args.files,
+            output_dir=args.output_dir,
+            save_report_flag=args.save_report,
+            tokenizer=tokenizer
+        )
+        
+        # Step 2: Transformer Data Preparation
+        transformer_data = step2_transformer_data_preparation(
+            data_dir=args.data_dir,
+            use_raw_text=args.use_raw_text
+        )
+        
+        # Step 4: Device Setup
+        device = step4_device_setup(config)
+        
+        # Step 6: Dataset Creation
+        dataset_dict = step6_dataset_creation(
+            transformer_data=transformer_data,
+            tokenizer=tokenizer,
+            config=config
+        )
+        
+        # Step 7: Final Summary
+        step7_final_summary(
+            config=config,
+            transformer_data=transformer_data,
+            datasets=dataset_dict,
+            device=device,
+            tokenizer=tokenizer
+        )
+        
+        print(f"  Completed at: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
+        
+    except KeyboardInterrupt:
+        print("\n\n  Pipeline interrupted by user.")
+        sys.exit(1)
+    except Exception as e:
+        print(f"\n\n  ERROR: Pipeline failed with error: {e}")
+        import traceback
+        traceback.print_exc()
+        sys.exit(1)
 
 
 if __name__ == "__main__":

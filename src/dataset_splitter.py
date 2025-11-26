@@ -6,7 +6,7 @@ Handles feature-target separation and label encoding for ML workflows.
 import numpy as np
 from typing import List, Dict, Optional, Tuple, Any
 import logging
-from data_pipeline import DataPipeline
+from .data_pipeline import DataPipeline
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -198,6 +198,11 @@ def load_datasets(data_dir: str = 'data') -> Dict[str, Any]:
 
 if __name__ == "__main__":
     # Test the dataset splitter
+    # Note: Run from project root: python -m src.dataset_splitter
+    import sys
+    from pathlib import Path
+    # Add parent directory to path for direct execution
+    sys.path.insert(0, str(Path(__file__).parent.parent))
     print("=" * 80)
     print("Testing Dataset Splitter")
     print("=" * 80)

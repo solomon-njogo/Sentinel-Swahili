@@ -40,7 +40,7 @@ class DataInspector:
         
         Args:
             texts: List of text strings
-            
+        
         Returns:
             Dictionary with length statistics
         """
@@ -64,6 +64,85 @@ class DataInspector:
                 "median": sorted(word_lengths)[len(word_lengths) // 2]
             },
             "total_samples": len(texts)
+        }
+    
+    def analyze_tokenized_length(
+        self, 
+        texts: List[str], 
+        tokenizer: Any,
+        max_samples: Optional[int] = None
+    ) -> Dict[str, Any]:
+        """
+        Analyze text length statistics after transformer tokenization.
+        This helps determine optimal max_length parameter for the model.
+        
+        Args:
+            texts: List of text strings
+            tokenizer: Transformer tokenizer instance
+            max_samples: Maximum number of samples to analyze (None = all)
+        
+        Returns:
+            Dictionary with tokenized length statistics
+        """
+        if not texts:
+            return {}
+        
+        # Limit samples for performance if dataset is very large
+        if max_samples and len(texts) > max_samples:
+            import random
+            sample_texts = random.sample(texts, max_samples)
+            logger.info(f"Analyzing tokenized length on {max_samples} sample texts")
+        else:
+            sample_texts = texts
+        
+        tokenized_lengths = []
+        
+        # Process in batches for efficiency
+        batch_size = 100
+        for i in range(0, len(sample_texts), batch_size):
+            batch = sample_texts[i:i + batch_size]
+            try:
+                # Tokenize batch
+                encoded = tokenizer(
+                    batch,
+                    add_special_tokens=True,
+                    return_length=True,
+                    padding=False,
+                    truncation=False
+                )
+                # Get lengths (number of tokens including special tokens)
+                if isinstance(encoded, dict) and 'length' in encoded:
+                    tokenized_lengths.extend(encoded['length'])
+                elif isinstance(encoded, list):
+                    # If tokenizer returns list, calculate lengths
+                    for enc in encoded:
+                        if isinstance(enc, dict) and 'input_ids' in enc:
+                            tokenized_lengths.append(len(enc['input_ids']))
+                        elif isinstance(enc, list):
+                            tokenized_lengths.append(len(enc))
+            except Exception as e:
+                logger.warning(f"Error tokenizing batch {i//batch_size}: {e}")
+                # Fallback: estimate based on word count
+                for text in batch:
+                    tokenized_lengths.append(len(text.split()) * 1.3)  # Rough estimate
+        
+        if not tokenized_lengths:
+            return {}
+        
+        sorted_lengths = sorted(tokenized_lengths)
+        n = len(tokenized_lengths)
+        
+        return {
+            "mean": sum(tokenized_lengths) / n,
+            "min": min(tokenized_lengths),
+            "max": max(tokenized_lengths),
+            "median": sorted_lengths[n // 2],
+            "p75": sorted_lengths[int(n * 0.75)],
+            "p90": sorted_lengths[int(n * 0.90)],
+            "p95": sorted_lengths[int(n * 0.95)],
+            "p99": sorted_lengths[int(n * 0.99)] if n > 1 else sorted_lengths[0],
+            "total_samples_analyzed": n,
+            "recommended_max_length": min(512, int(sorted_lengths[int(n * 0.95)] * 1.1)) if n > 0 else 512
         }
     
     def analyze_unk_tokens(self, texts: List[str]) -> Dict[str, Any]:
@@ -279,14 +358,20 @@ class DataInspector:
         
         return strategy
     
-    def inspect_dataset(self, features: List[str], labels: Optional[List[Optional[str]]] = None) -> Dict[str, Any]:
+    def inspect_dataset(
+        self, 
+        features: List[str], 
+        labels: Optional[List[Optional[str]]] = None,
+        tokenizer: Optional[Any] = None
+    ) -> Dict[str, Any]:
         """
         Perform comprehensive inspection of a dataset.
         
         Args:
             features: List of text features
             labels: Optional list of labels
-            
+            tokenizer: Optional transformer tokenizer for tokenized length analysis
+        
         Returns:
             Comprehensive statistics dictionary
         """
@@ -303,6 +388,19 @@ class DataInspector:
         
         # Generate UNK strategy
         results["unk_strategy"] = self.generate_unk_strategy(results["unk_statistics"])
+        
+        # Add tokenized length analysis if tokenizer is provided
+        if tokenizer is not None:
+            try:
+                logger.info("Analyzing tokenized lengths...")
+                results["tokenized_length_statistics"] = self.analyze_tokenized_length(
+                    features, 
+                    tokenizer,
+                    max_samples=min(1000, len(features))  # Analyze up to 1000 samples for performance
+                )
+            except Exception as e:
+                logger.warning(f"Could not analyze tokenized lengths: {e}")
+                results["tokenized_length_statistics"] = None
         
         logger.info("Dataset inspection complete")
         return results
@@ -387,7 +485,11 @@ class DataInspector:
 
 if __name__ == "__main__":
     # Import DataPipeline to load actual datasets
-    from data_pipeline import DataPipeline
+    import sys
+    from pathlib import Path
+    # Add parent directory to path for direct execution
+    sys.path.insert(0, str(Path(__file__).parent.parent))
+    from src.data_pipeline import DataPipeline
     
     # Initialize pipeline and inspector
     pipeline = DataPipeline(data_dir="data")

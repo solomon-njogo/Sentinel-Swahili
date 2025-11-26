@@ -1,6 +1,8 @@
 """
 Text Cleaning Module for Swahili Text Analysis
-Handles lowercase conversion, tokenization, stop-word removal, and stemming.
+Handles data cleaning: removes noise/boilerplate, ensures UTF-8 encoding,
+removes tokenization placeholders (UNK), lowercase conversion, tokenization,
+stop-word removal, and stemming.
 """
 
 import re
@@ -109,13 +111,16 @@ class SwahiliStemmer:
 class SwahiliTextCleaner:
     """
     Class for cleaning and normalizing Swahili text.
-    Performs: lowercase conversion, tokenization, stop-word removal, and stemming.
+    Performs: UTF-8 normalization, noise/boilerplate removal, UNK token removal,
+    lowercase conversion, tokenization, stop-word removal, and stemming.
     """
     
     def __init__(self):
         """Initialize the text cleaner with stop-words and stemmer."""
         self.stop_words: Set[str] = self._load_stopwords()
         self.stemmer = self._load_stemmer()
+        # Common tokenization placeholders to remove
+        self.tokenization_placeholders = {'UNK', '<UNK>', '[UNK]', '<unk>', '[unk]'}
         logger.info("SwahiliTextCleaner initialized")
     
     def _load_stopwords(self) -> Set[str]:
@@ -170,6 +175,71 @@ class SwahiliTextCleaner:
         # Fallback to custom stemmer
         logger.info("Using custom Swahili stemmer")
         return SwahiliStemmer()
+    
+    def normalize_encoding(self, text: str) -> str:
+        """
+        Ensure consistent UTF-8 encoding by handling encoding errors.
+        
+        Args:
+            text: Input text string
+            
+        Returns:
+            UTF-8 normalized text
+        """
+        if not text:
+            return ""
+        
+        # If text is already a string, ensure it's properly encoded
+        try:
+            # Encode to UTF-8 and decode back to ensure consistency
+            if isinstance(text, bytes):
+                text = text.decode('utf-8', errors='replace')
+            else:
+                # Normalize by encoding and decoding
+                text = text.encode('utf-8', errors='replace').decode('utf-8', errors='replace')
+        except (UnicodeEncodeError, UnicodeDecodeError) as e:
+            logger.warning(f"Encoding error handled: {e}")
+            # Replace problematic characters
+            text = text.encode('utf-8', errors='replace').decode('utf-8', errors='replace')
+        
+        return text
+    
+    def remove_noise(self, text: str) -> str:
+        """
+        Remove noise and boilerplate from text.
+        Removes extra whitespace, leading/trailing spaces, and normalizes spacing.
+        
+        Args:
+            text: Input text string
+            
+        Returns:
+            Text with noise removed
+        """
+        if not text:
+            return ""
+        
+        # Remove extra whitespace (multiple spaces, tabs, newlines)
+        text = re.sub(r'\s+', ' ', text)
+        
+        # Remove leading/trailing whitespace
+        text = text.strip()
+        
+        return text
+    
+    def remove_tokenization_placeholders(self, tokens: List[str]) -> List[str]:
+        """
+        Remove tokenization placeholders like UNK from token list.
+        Checks case-insensitively to catch UNK, unk, etc.
+        
+        Args:
+            tokens: List of tokens
+            
+        Returns:
+            List of tokens with placeholders removed
+        """
+        # Create a set of lowercase placeholders for case-insensitive matching
+        placeholder_lower = {p.lower() for p in self.tokenization_placeholders}
+        return [token for token in tokens if token.lower() not in placeholder_lower]
     
     def to_lowercase(self, text: str) -> str:
         """
@@ -234,64 +304,124 @@ class SwahiliTextCleaner:
                     stemmed.append(token)
         return stemmed
     
-    def clean(self, text: str) -> str:
+    def clean(self, text: str, remove_unk: bool = False) -> str:
         """
         Apply all cleaning steps to text in sequence:
-        1. Convert to lowercase
-        2. Tokenize
-        3. Remove stop-words
-        4. Stem
-        5. Rejoin to string
+        1. Normalize UTF-8 encoding
+        2. Remove noise/boilerplate
+        3. Convert to lowercase
+        4. Tokenize
+        5. Remove tokenization placeholders (UNK) - OPTIONAL
+        6. Remove stop-words
+        7. Stem
+        8. Rejoin to string
         
         Args:
             text: Input text string
-            
+            remove_unk: If True, remove UNK tokens. If False, preserve them.
+                       Default: False (preserve UNK for transformer compatibility)
+        
         Returns:
             Cleaned and normalized text string
         """
         if not text or not text.strip():
             return ""
         
-        # Step 1: Convert to lowercase
+        # Step 1: Normalize UTF-8 encoding
+        text = self.normalize_encoding(text)
+        
+        # Step 2: Remove noise/boilerplate
+        text = self.remove_noise(text)
+        
+        if not text:
+            return ""
+        
+        # Step 3: Convert to lowercase
         text = self.to_lowercase(text)
         
-        # Step 2: Tokenize
+        # Step 4: Tokenize
         tokens = self.tokenize(text)
         
         if not tokens:
             return ""
         
-        # Step 3: Remove stop-words
+        # Step 5: Remove tokenization placeholders (UNK, etc.) - OPTIONAL
+        # For transformer models, UNK tokens should be preserved as they may
+        # represent actual unknown words in the original data
+        if remove_unk:
+            tokens = self.remove_tokenization_placeholders(tokens)
+        
+        if not tokens:
+            return ""
+        
+        # Step 6: Remove stop-words
         tokens = self.remove_stopwords(tokens)
         
-        # Step 4: Stem
+        # Step 7: Stem
         tokens = self.stem(tokens)
         
-        # Step 5: Rejoin tokens with spaces
+        # Step 8: Rejoin tokens with spaces
         cleaned_text = " ".join(tokens)
         
         return cleaned_text
 
 
 if __name__ == "__main__":
-    # Test the text cleaner
+    # Process the entire dataset with text cleaner
+    import os
+    import sys
+    from pathlib import Path
+    # Add parent directory to path for direct execution
+    sys.path.insert(0, str(Path(__file__).parent.parent))
+    from src.data_pipeline import DataPipeline
+    
     cleaner = SwahiliTextCleaner()
+    pipeline = DataPipeline(data_dir="data")
     
-    # Test with sample Swahili text
-    test_text = "Taarifa hiyo ilisema kuwa ongezeko la joto la maji juu ya wastani katikati ya bahari ya UNK inaashiria kuwepo kwa mvua za el nino"
+    # Process all dataset files
+    dataset_files = ["train.txt", "test.txt", "valid.txt"]
     
-    print("Original text:")
-    print(test_text)
-    print("\nCleaned text:")
-    cleaned = cleaner.clean(test_text)
-    print(cleaned)
+    for filename in dataset_files:
+        try:
+            print(f"\n{'='*80}")
+            print(f"Processing entire {filename} dataset")
+            print(f"{'='*80}")
+            
+            # Parse entire dataset (this applies cleaning to all lines)
+            features, labels, label_format = pipeline.parse_dataset(filename)
+            
+            if not features:
+                print(f"  WARNING: No data found in {filename}")
+                continue
+            
+            print(f"\n  Total samples processed: {len(features)}")
+            print(f"  Label format: {label_format if label_format else 'Unlabeled'}")
+            
+            # Show statistics
+            total_chars = sum(len(f) for f in features)
+            total_words = sum(len(f.split()) for f in features)
+            unk_count = sum(1 for f in features if 'unk' in f.lower())
+            
+            print(f"\n  Statistics:")
+            print(f"    Total characters: {total_chars:,}")
+            print(f"    Total words: {total_words:,}")
+            print(f"    Average chars per sample: {total_chars // len(features):.1f}")
+            print(f"    Average words per sample: {total_words // len(features):.1f}")
+            print(f"    Samples with UNK (before cleaning): {unk_count}")
+            
+            # Show first example
+            if features:
+                print(f"\n  First example (cleaned):")
+                print(f"    {features[0][:150]}...")
+                
+        except FileNotFoundError as e:
+            print(f"  ERROR: {e}")
+        except Exception as e:
+            print(f"  ERROR processing {filename}: {e}")
+            import traceback
+            traceback.print_exc()
     
-    print("\nStep-by-step:")
-    print(f"1. Lowercase: {cleaner.to_lowercase(test_text)}")
-    tokens = cleaner.tokenize(test_text)
-    print(f"2. Tokens: {tokens}")
-    tokens_no_stop = cleaner.remove_stopwords(tokens)
-    print(f"3. After stop-word removal: {tokens_no_stop}")
-    stemmed = cleaner.stem(tokens_no_stop)
-    print(f"4. After stemming: {stemmed}")
+    print(f"\n{'='*80}")
+    print("Complete dataset processing finished!")
+    print(f"{'='*80}\n")
 

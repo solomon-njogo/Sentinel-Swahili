@@ -8,7 +8,7 @@ import re
 from typing import List, Tuple, Optional, Dict, Any
 from collections import Counter
 import logging
-from text_cleaner import SwahiliTextCleaner
+from .text_cleaner import SwahiliTextCleaner
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -37,7 +37,8 @@ class DataPipeline:
     
     def read_file(self, filename: str) -> List[str]:
         """
-        Read a text file line by line (memory-efficient for large files).
+        Read a text file line by line with consistent UTF-8 encoding.
+        Handles encoding errors gracefully by replacing problematic characters.
         
         Args:
             filename: Name of the file to read
@@ -49,11 +50,12 @@ class DataPipeline:
         if not os.path.exists(filepath):
             raise FileNotFoundError(f"File not found: {filepath}")
         
-        logger.info(f"Reading file: {filepath}")
+        logger.info(f"Reading file: {filepath} (UTF-8 encoding)")
         lines = []
         
         try:
-            with open(filepath, 'r', encoding='utf-8') as f:
+            # Read with UTF-8 encoding, replacing problematic characters
+            with open(filepath, 'r', encoding='utf-8', errors='replace') as f:
                 for line_num, line in enumerate(f, 1):
                     line = line.strip()
                     if line:  # Skip empty lines
@@ -66,7 +68,16 @@ class DataPipeline:
         
         except UnicodeDecodeError as e:
             logger.error(f"Encoding error reading {filepath}: {e}")
-            raise
+            # Try with error replacement as fallback
+            logger.warning("Attempting to read with error replacement...")
+            try:
+                with open(filepath, 'r', encoding='utf-8', errors='replace') as f:
+                    lines = [line.strip() for line in f if line.strip()]
+                logger.info(f"Read {len(lines)} lines with error replacement")
+                return lines
+            except Exception as e2:
+                logger.error(f"Failed to read file even with error replacement: {e2}")
+                raise
         except Exception as e:
             logger.error(f"Error reading {filepath}: {e}")
             raise
@@ -160,16 +171,23 @@ class DataPipeline:
         # Detect label format
         label_format = self.detect_label_format(lines)
         
-        # Parse lines and apply text cleaning
+        # Parse lines and apply text cleaning to entire dataset
         features = []
         labels = []
+        total_lines = len(lines)
         
-        for line in lines:
+        logger.info(f"Processing {total_lines} lines from {filename}...")
+        
+        for idx, line in enumerate(lines, 1):
             text, label = self.parse_line(line, label_format)
             # Apply mandatory text cleaning to the feature text
             cleaned_text = self.text_cleaner.clean(text)
             features.append(cleaned_text)
             labels.append(label)
+            
+            # Progress indicator for large files
+            if idx % 10000 == 0 or idx == total_lines:
+                logger.info(f"  Processed {idx}/{total_lines} lines ({idx/total_lines*100:.1f}%)...")
         
         # Check if we actually found labels
         if label_format and all(l is None for l in labels):
@@ -203,7 +221,7 @@ class DataPipeline:
         total_lines = 0
         empty_lines = 0
         
-        with open(filepath, 'r', encoding='utf-8') as f:
+        with open(filepath, 'r', encoding='utf-8', errors='replace') as f:
             for line in f:
                 total_lines += 1
                 if not line.strip():
@@ -220,6 +238,7 @@ class DataPipeline:
 
 if __name__ == "__main__":
     # Test the pipeline
+    # Note: Run from project root: python -m src.data_pipeline
     pipeline = DataPipeline()
     
     # Test file reading

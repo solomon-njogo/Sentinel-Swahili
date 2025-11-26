@@ -16,6 +16,14 @@ nltk>=3.8  # Natural Language Toolkit (optional, for enhanced stop-word and stem
 # Dataset Structuring Dependencies
 numpy>=1.23.0  # Required for feature-target split and numerical operations
 
+# Transformer Fine-tuning Dependencies
+transformers>=4.30.0  # Hugging Face transformers for tokenizers and model utilities
+torch>=2.0.0  # PyTorch for deep learning
+peft>=0.4.0  # Parameter-Efficient Fine-Tuning (LoRA support)
+datasets>=2.12.0  # Hugging Face datasets library for advanced data handling
+accelerate>=0.20.0  # Hugging Face accelerate for distributed training and optimization
+scikit-learn>=1.3.0  # For evaluation metrics (accuracy, F1, precision, recall)
+
 # Optional dependencies for future enhancements:
 # pandas>=1.5.0  # For advanced data manipulation (if needed)
 # matplotlib>=3.6.0  # For visualizations (if needed)
