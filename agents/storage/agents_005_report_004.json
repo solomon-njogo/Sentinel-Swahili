@@ -1,0 +1,83 @@
+{
+  "report_id": "RPT-005-83506AC9",
+  "raw_message": "Kuna jambo la kusumbua katika eneo la Arusha. Watu: Mwanafunzi aliyeitwa Peter. Tarehe: leo saa 1:00 jioni.",
+  "source": "whatsapp_simulator",
+  "received_at": "2025-12-02T19:19:05.392753",
+  "processed_at": "2025-12-03T01:03:05.398081",
+  "status": "processed",
+  "validation": {
+    "status": "incomplete",
+    "overall_completeness": 0.4,
+    "entities": {
+      "who": [],
+      "what": [],
+      "where": [
+        "Arusha",
+        "la Arusha"
+      ],
+      "when": [
+        "leo",
+        "jioni",
+        "1:00 jioni",
+        "1:00 jioni",
+        "leo saa 1:00 jioni"
+      ]
+    },
+    "field_scores": [
+      {
+        "field_name": "who",
+        "score": 0.0,
+        "is_present": false,
+        "extracted_value": null,
+        "confidence": 0.0
+      },
+      {
+        "field_name": "what",
+        "score": 0.0,
+        "is_present": false,
+        "extracted_value": null,
+        "confidence": 0.0
+      },
+      {
+        "field_name": "where",
+        "score": 1.0,
+        "is_present": true,
+        "extracted_value": "Arusha, la Arusha",
+        "confidence": 1.0
+      },
+      {
+        "field_name": "when",
+        "score": 1.0,
+        "is_present": true,
+        "extracted_value": "leo, jioni, 1:00 jioni",
+        "confidence": 1.0
+      }
+    ],
+    "missing_fields": [
+      "who",
+      "what"
+    ],
+    "prompts": [
+      "Tafadhali toa taarifa za watu waliohusika (Nani?)",
+      "Tafadhali eleza kile kilichotokea au tishio (Nini?)"
+    ],
+    "timestamp": "2025-12-03T01:03:05.395004"
+  },
+  "escalation": {
+    "severity": "Low",
+    "priority_score": 0.125,
+    "escalation_window_minutes": 10080,
+    "urgency_keywords_found": [],
+    "classification_confidence": 0.5,
+    "requires_immediate_alert": false,
+    "timestamp": "2025-12-03T01:03:05.397428"
+  },
+  "metadata": {
+    "simulated_severity": "low",
+    "simulated_completeness": "incomplete",
+    "language": "sw"
+  },
+  "run_number": 5,
+  "report_number_in_run": 4,
+  "log_file": "agents_005.log"
+}
