@@ -8,6 +8,8 @@ Usage:
 """
 
 from src.preprocessing_pipeline import preprocess_dataset
+from src.eda_analyzer import run_eda
+from src.eda_visualizations import generate_all_visualizations
 from src.utils.logger import setup_logging, get_logger
 import logging
 
@@ -22,6 +24,23 @@ def main():
     
     # Run preprocessing on dataset
     preprocess_dataset(data_dir="data")
+    
+    # Run Exploratory Data Analysis (EDA)
+    logger.info("\n" + "=" * 80)
+    logger.info("Starting Exploratory Data Analysis (EDA)")
+    logger.info("=" * 80)
+    
+    try:
+        # Run EDA analysis
+        eda_results = run_eda(data_dir="data", output_dir="reports")
+        
+        # Generate visualizations
+        generate_all_visualizations(eda_results, output_dir="reports")
+        
+        logger.info("EDA completed successfully!")
+    except Exception as e:
+        logger.error(f"Error during EDA: {e}", exc_info=True)
+        logger.warning("Continuing despite EDA errors...")
     
     logger.info("Pipeline execution complete")
 

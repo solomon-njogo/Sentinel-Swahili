@@ -24,7 +24,12 @@ datasets>=2.12.0  # Hugging Face datasets library for advanced data handling
 accelerate>=0.20.0  # Hugging Face accelerate for distributed training and optimization
 scikit-learn>=1.3.0  # For evaluation metrics (accuracy, F1, precision, recall)
 
+# EDA and Visualization Dependencies
+matplotlib>=3.6.0  # For visualizations and plotting
+seaborn>=0.12.0  # Statistical data visualization
+langdetect>=1.0.9  # Language detection
+gensim>=4.3.0  # Topic modeling (LDA)
+
 # Optional dependencies for future enhancements:
 # pandas>=1.5.0  # For advanced data manipulation (if needed)
-# matplotlib>=3.6.0  # For visualizations (if needed)
 
