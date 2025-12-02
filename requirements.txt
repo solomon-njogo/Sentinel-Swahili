@@ -18,11 +18,17 @@ numpy>=1.23.0  # Required for feature-target split and numerical operations
 
 # Transformer Fine-tuning Dependencies
 transformers>=4.30.0  # Hugging Face transformers for tokenizers and model utilities
+huggingface_hub>=0.30.0,<1.0  # Hugging Face Hub API for model authentication and access (version constraint for transformers compatibility)
 torch>=2.0.0  # PyTorch for deep learning
 peft>=0.4.0  # Parameter-Efficient Fine-Tuning (LoRA support)
+bitsandbytes>=0.41.0  # 4-bit quantization for QLoRA (optional on Windows, limited support)
 datasets>=2.12.0  # Hugging Face datasets library for advanced data handling
 accelerate>=0.20.0  # Hugging Face accelerate for distributed training and optimization
 scikit-learn>=1.3.0  # For evaluation metrics (accuracy, F1, precision, recall)
+protobuf>=3.20.0,<6.0  # Protocol buffers library required for model loading (version constraint for compatibility)
+
+# Optional: Faster model downloads (install with: pip install hf_xet)
+# hf_xet>=1.2.0  # Xet Storage for faster Hugging Face model downloads
 
 # EDA and Visualization Dependencies
 matplotlib>=3.6.0  # For visualizations and plotting

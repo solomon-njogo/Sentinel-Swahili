@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import Optional, List, Dict
 from transformers import AutoTokenizer
 from datasets import Dataset
+from huggingface_hub import login
 
 from src.utils.logger import get_logger
 
@@ -26,6 +27,18 @@ def load_llama_tokenizer(model_name: str = "meta-llama/Llama-2-7b-hf") -> Option
         Tokenizer object or None if loading fails
     """
     logger.info(f"Attempting to load Llama 2 tokenizer: {model_name}")
+    
+    # Authenticate with Hugging Face Hub
+    try:
+        login(new_session=False)
+        logger.info("Authenticated with Hugging Face Hub")
+    except KeyboardInterrupt:
+        logger.error("Authentication interrupted by user")
+        return None
+    except Exception as e:
+        logger.warning(f"Could not authenticate with Hugging Face Hub: {e}")
+        logger.warning("Will attempt to use cached credentials or local files")
+        # Continue execution - authentication might not be needed if using local files
     
     # First, try common local paths (faster if available)
     local_llama_paths = [
@@ -61,7 +74,6 @@ def load_llama_tokenizer(model_name: str = "meta-llama/Llama-2-7b-hf") -> Option
     # If not found locally, fetch from Hugging Face Hub
     logger.info("Local tokenizer not found. Fetching from Hugging Face Hub...")
     logger.info("Note: This requires Hugging Face authentication for gated models.")
-    logger.info("Run 'huggingface-cli login' if you haven't already.")
     
     try:
         tokenizer = AutoTokenizer.from_pretrained(
@@ -80,11 +92,33 @@ def load_llama_tokenizer(model_name: str = "meta-llama/Llama-2-7b-hf") -> Option
         return tokenizer
         
     except Exception as e:
+        error_str = str(e)
         logger.error(f"Failed to fetch tokenizer from Hugging Face Hub: {e}")
-        logger.error("Please ensure you have:")
-        logger.error("  1. Hugging Face authentication set up (huggingface-cli login)")
-        logger.error("  2. Access to the Llama 2 model repository")
-        logger.error("  3. Or a local copy of the tokenizer files")
+        
+        # Check for gated repository access issue
+        if "gated repo" in error_str.lower() or "403" in error_str or "not in the authorized list" in error_str.lower():
+            logger.error("=" * 80)
+            logger.error("ACCESS DENIED: Llama 2 is a gated repository on Hugging Face")
+            logger.error("=" * 80)
+            logger.error("To gain access, you need to:")
+            logger.error("  1. Visit https://huggingface.co/meta-llama/Llama-2-7b-hf")
+            logger.error("  2. Request access to the repository (click 'Agree and access repository')")
+            logger.error("  3. Wait for Meta to approve your request (usually takes a few hours to days)")
+            logger.error("  4. Once approved, ensure you're logged in:")
+            logger.error("     - Run: huggingface-cli login")
+            logger.error("     - Or set HF_TOKEN environment variable")
+            logger.error("  5. Then run this script again")
+            logger.error("")
+            logger.error("Alternative: If you have a local copy of the model, place it in one of these locations:")
+            for local_path in local_llama_paths:
+                logger.error(f"    - {os.path.expanduser(local_path)}")
+            logger.error("=" * 80)
+        else:
+            logger.error("Please ensure you have:")
+            logger.error("  1. Hugging Face authentication set up (huggingface-cli login or token in environment)")
+            logger.error("  2. Access to the Llama 2 model repository")
+            logger.error("  3. Or a local copy of the tokenizer files")
+        
         return None
 
 
