@@ -82,33 +82,44 @@ def analyze_vocabulary(texts: List[str]) -> Dict:
 
 def load_tokenizer(model_name: Optional[str] = None) -> Optional:
     """
-    Load a tokenizer for token counting.
-    Uses GPT-2 tokenizer by default (accessible without authentication).
-    Optionally tries Llama 2 tokenizer if model_name is provided or if available locally.
-    
-    Note: GPT-2 tokenizer provides approximate token counts. For exact Llama 2
-    tokenization, you need access to the gated Llama 2 model repository or a local copy.
+    Load a Llama 2 tokenizer for token counting.
+    Tries local Llama 2 tokenizer paths first, then attempts to load from Hugging Face Hub.
     
     Args:
         model_name: Optional name of the model to load tokenizer from.
-                    If None, tries local Llama 2 tokenizer, then falls back to GPT-2.
+                    If None, tries local Llama 2 tokenizer paths, then Hugging Face Hub.
         
     Returns:
         Tokenizer object or None if loading fails
     """
-    from transformers import AutoTokenizer, GPT2Tokenizer
+    from transformers import AutoTokenizer
+    from huggingface_hub import login
     import os
+    
+    # Authenticate with Hugging Face Hub (may be needed for gated models)
+    try:
+        login(new_session=False)
+        logger.debug("Authenticated with Hugging Face Hub")
+    except KeyboardInterrupt:
+        logger.error("Authentication interrupted by user")
+        return None
+    except Exception as e:
+        logger.debug(f"Could not authenticate with Hugging Face Hub: {e}")
+        logger.debug("Will attempt to use cached credentials or local files")
+        # Continue execution - authentication might not be needed if using local files
     
     # If specific model requested, try it first
     if model_name:
         try:
             logger.info(f"Attempting to load requested tokenizer: {model_name}")
             tokenizer = AutoTokenizer.from_pretrained(model_name, use_fast=True)
+            if tokenizer.pad_token is None:
+                tokenizer.pad_token = tokenizer.eos_token
             logger.info(f"Tokenizer {model_name} loaded successfully")
             return tokenizer
         except Exception as e:
             logger.warning(f"Failed to load {model_name} tokenizer: {e}")
-            logger.info("Falling back to alternatives...")
+            logger.info("Falling back to local paths...")
     
     # Try local Llama 2 tokenizer if available (common paths)
     local_llama_paths = [
@@ -123,22 +134,30 @@ def load_tokenizer(model_name: Optional[str] = None) -> Optional:
             try:
                 logger.info(f"Attempting to load local Llama 2 tokenizer from: {expanded_path}")
                 tokenizer = AutoTokenizer.from_pretrained(expanded_path, use_fast=True, local_files_only=True)
+                if tokenizer.pad_token is None:
+                    tokenizer.pad_token = tokenizer.eos_token
                 logger.info("Local Llama 2 tokenizer loaded successfully")
                 return tokenizer
             except Exception as e:
                 logger.debug(f"Failed to load tokenizer from {expanded_path}: {e}")
                 continue
     
-    # Default to GPT-2 tokenizer (always accessible, no authentication required)
+    # Try loading from Hugging Face Hub if not found locally
+    default_model_name = "meta-llama/Llama-2-7b-hf"
     try:
-        logger.info("Loading GPT-2 tokenizer (default, no authentication required)...")
-        logger.info("Note: GPT-2 tokenization provides approximate token counts.")
-        logger.info("For exact Llama 2 counts, ensure Llama 2 tokenizer is available locally or with authentication.")
-        tokenizer = GPT2Tokenizer.from_pretrained("gpt2")
-        logger.info("GPT-2 tokenizer loaded successfully")
+        logger.info(f"Attempting to load Llama 2 tokenizer from Hugging Face Hub: {default_model_name}")
+        tokenizer = AutoTokenizer.from_pretrained(
+            default_model_name,
+            use_fast=True,
+            trust_remote_code=False
+        )
+        if tokenizer.pad_token is None:
+            tokenizer.pad_token = tokenizer.eos_token
+        logger.info("Llama 2 tokenizer loaded successfully from Hugging Face Hub")
         return tokenizer
     except Exception as e:
-        logger.error(f"Failed to load GPT-2 tokenizer: {e}")
+        logger.error(f"Failed to load Llama 2 tokenizer: {e}")
+        logger.error("Please ensure you have access to the Llama 2 model or have it cached locally.")
         return None
 
 

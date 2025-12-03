@@ -165,6 +165,96 @@ def get_logger(name: str, log_level: Optional[int] = None) -> logging.Logger:
     return logger
 
 
+def get_next_log_filename(
+    log_dir: str = "logs",
+    prefix: str = "pipeline",
+    extension: str = ".log"
+) -> str:
+    """
+    Generate a unique log filename with incrementing number.
+    Finds the highest existing log number and increments it.
+    
+    Args:
+        log_dir: Directory for log files (default: "logs")
+        prefix: Prefix for the log file name (default: "pipeline")
+        extension: File extension (default: ".log")
+        
+    Returns:
+        Unique log filename (e.g., "pipeline_001.log")
+    """
+    log_path = Path(log_dir)
+    log_path.mkdir(parents=True, exist_ok=True)
+    
+    # Pattern to match: prefix_NNN.log where NNN is a number
+    pattern = f"{prefix}_*{extension}"
+    existing_files = list(log_path.glob(pattern))
+    
+    if not existing_files:
+        # No existing files, start with 001
+        return f"{prefix}_001{extension}"
+    
+    # Extract numbers from existing filenames
+    numbers = []
+    for file in existing_files:
+        # Extract number from filename like "pipeline_001.log"
+        name = file.stem  # Gets filename without extension
+        try:
+            # Split by underscore and get the last part (the number)
+            parts = name.split('_')
+            if len(parts) >= 2:
+                number_str = parts[-1]
+                number = int(number_str)
+                numbers.append(number)
+        except (ValueError, IndexError):
+            # Skip files that don't match the pattern
+            continue
+    
+    if not numbers:
+        # No valid numbered files found, start with 001
+        return f"{prefix}_001{extension}"
+    
+    # Find the highest number and increment
+    max_number = max(numbers)
+    next_number = max_number + 1
+    
+    # Format with zero-padding (001, 002, etc.)
+    return f"{prefix}_{next_number:03d}{extension}"
+
+
+# Convenience function to setup logging with incrementing log file
+def setup_logging_with_increment(
+    log_level: int = logging.INFO,
+    log_dir: str = "logs",
+    prefix: str = "pipeline",
+    use_colors: bool = True
+) -> str:
+    """
+    Setup logging with an incrementing log file number.
+    Automatically finds the next available log number.
+    Uses Loguru-style formatting with colored terminal output.
+    
+    Args:
+        log_level: Logging level (default: logging.INFO)
+        log_dir: Directory for log files (default: "logs")
+        prefix: Prefix for the log file name (default: "pipeline")
+        use_colors: Whether to use colors in terminal output (default: True)
+        
+    Returns:
+        Path to the created log file
+    """
+    log_file = get_next_log_filename(log_dir=log_dir, prefix=prefix)
+    
+    setup_logging(
+        log_level=log_level,
+        log_file=log_file,
+        log_dir=log_dir,
+        use_colors=use_colors
+    )
+    
+    log_path = Path(log_dir) / log_file
+    return str(log_path)
+
+
 # Convenience function to setup logging with timestamped log file
 def setup_logging_with_timestamp(
     log_level: int = logging.INFO,

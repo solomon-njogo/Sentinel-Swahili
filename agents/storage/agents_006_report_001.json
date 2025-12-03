@@ -1,0 +1,86 @@
+{
+  "report_id": "RPT-006-C7277925",
+  "raw_message": "Hatari kubwa! Kuna watu wamevaa silaha katika Hospitali ya Muhimbili, Dar es Salaam. Watu: Watu watatu wamevaa nguo nyeusi. Tarehe: sasa hivi. Tafadhali fika haraka sana!",
+  "source": "whatsapp_simulator",
+  "received_at": "2025-12-02T19:07:04.116697",
+  "processed_at": "2025-12-03T01:13:04.135659",
+  "status": "processed",
+  "validation": {
+    "status": "complete",
+    "overall_completeness": 1.0,
+    "entities": {
+      "who": [
+        "watatu"
+      ],
+      "what": [
+        "Hatari kubwa! Kuna watu wamevaa silaha katika Hospitali ya Muh",
+        "Hatari kubwa! Kuna watu wamevaa silaha katika Hospitali",
+        "Hatari kubwa! Kuna watu wamevaa silaha katika Hospitali ya Muhimbili, Dar es Salaam. Wat",
+        "Hatari kubwa"
+      ],
+      "where": [
+        "Dar es Salaam",
+        "Hospitali ya Muhimbili",
+        "Muhimbili"
+      ],
+      "when": [
+        "sasa",
+        "sasa hivi"
+      ]
+    },
+    "field_scores": [
+      {
+        "field_name": "who",
+        "score": 1.0,
+        "is_present": true,
+        "extracted_value": "watatu",
+        "confidence": 1.0
+      },
+      {
+        "field_name": "what",
+        "score": 1.0,
+        "is_present": true,
+        "extracted_value": "Hatari kubwa! Kuna watu wamevaa silaha katika Hospitali ya Muh, Hatari kubwa! Kuna watu wamevaa silaha katika Hospitali, Hatari kubwa! Kuna watu wamevaa silaha katika Hospitali ya Muhimbili, Dar es Salaam. Wat",
+        "confidence": 1.0
+      },
+      {
+        "field_name": "where",
+        "score": 1.0,
+        "is_present": true,
+        "extracted_value": "Dar es Salaam, Hospitali ya Muhimbili, Muhimbili",
+        "confidence": 1.0
+      },
+      {
+        "field_name": "when",
+        "score": 1.0,
+        "is_present": true,
+        "extracted_value": "sasa, sasa hivi",
+        "confidence": 1.0
+      }
+    ],
+    "missing_fields": [],
+    "prompts": [],
+    "timestamp": "2025-12-03T01:13:04.133200"
+  },
+  "escalation": {
+    "severity": "Critical",
+    "priority_score": 1.0,
+    "escalation_window_minutes": 2,
+    "urgency_keywords_found": [
+      "haraka",
+      "sasa",
+      "hatari"
+    ],
+    "classification_confidence": 0.95,
+    "requires_immediate_alert": true,
+    "timestamp": "2025-12-03T01:13:04.135196"
+  },
+  "metadata": {
+    "simulated_severity": "critical",
+    "simulated_completeness": "complete",
+    "language": "sw"
+  },
+  "run_number": 6,
+  "report_number_in_run": 1,
+  "log_file": "agents_006.log"
+}

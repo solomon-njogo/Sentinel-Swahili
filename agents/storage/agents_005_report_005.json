@@ -1,0 +1,84 @@
+{
+  "report_id": "RPT-005-21FF797F",
+  "raw_message": "Kuna shughuli isiyo ya kawaida. Watu wameonekana wakifanya uchunguzi wa eneo. Jina: Juma Mwangi. Tarehe: leo saa 10:00 asubuhi.",
+  "source": "whatsapp_simulator",
+  "received_at": "2025-12-02T15:22:05.402558",
+  "processed_at": "2025-12-03T01:03:05.407876",
+  "status": "processed",
+  "validation": {
+    "status": "complete",
+    "overall_completeness": 0.75,
+    "entities": {
+      "who": [
+        "Juma Mwangi"
+      ],
+      "what": [
+        "Kuna shughuli isiyo ya kawaida. Watu wameonekana wakifanya uchunguzi wa eneo. Ji"
+      ],
+      "where": [],
+      "when": [
+        "leo",
+        "asubuhi",
+        "10:00 asubuhi",
+        "10:00 asubuhi",
+        "leo saa 10:00 asubuhi"
+      ]
+    },
+    "field_scores": [
+      {
+        "field_name": "who",
+        "score": 1.0,
+        "is_present": true,
+        "extracted_value": "Juma Mwangi",
+        "confidence": 1.0
+      },
+      {
+        "field_name": "what",
+        "score": 1.0,
+        "is_present": true,
+        "extracted_value": "Kuna shughuli isiyo ya kawaida. Watu wameonekana wakifanya uchunguzi wa eneo. Ji",
+        "confidence": 1.0
+      },
+      {
+        "field_name": "where",
+        "score": 0.0,
+        "is_present": false,
+        "extracted_value": null,
+        "confidence": 0.0
+      },
+      {
+        "field_name": "when",
+        "score": 1.0,
+        "is_present": true,
+        "extracted_value": "leo, asubuhi, 10:00 asubuhi",
+        "confidence": 1.0
+      }
+    ],
+    "missing_fields": [
+      "where"
+    ],
+    "prompts": [
+      "Tafadhali toa eneo au mahali (Wapi?)"
+    ],
+    "timestamp": "2025-12-03T01:03:05.404751"
+  },
+  "escalation": {
+    "severity": "Medium",
+    "priority_score": 0.37,
+    "escalation_window_minutes": 1440,
+    "urgency_keywords_found": [
+      "isiyo ya kawaida"
+    ],
+    "classification_confidence": 0.7,
+    "requires_immediate_alert": false,
+    "timestamp": "2025-12-03T01:03:05.407141"
+  },
+  "metadata": {
+    "simulated_severity": "medium",
+    "simulated_completeness": "incomplete",
+    "language": "sw"
+  },
+  "run_number": 5,
+  "report_number_in_run": 5,
+  "log_file": "agents_005.log"
+}
