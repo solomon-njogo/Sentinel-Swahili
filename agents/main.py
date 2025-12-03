@@ -11,13 +11,17 @@ from typing import Optional
 # Add parent directory to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from agents.data_models import ThreatReport, ProcessedReport
+from agents.data_models import (
+    ThreatReport, ProcessedReport, ValidationResult, EscalationResult,
+    ExtractedEntities, FieldCompleteness, ValidationStatus, SeverityLevel
+)
 from agents.validator_agent import ValidatorAgent
 from agents.escalation_agent import EscalationAgent
 from agents.storage import ReportStorage
 from agents.whatsapp_simulator import WhatsAppSimulator
 from agents.config import LANGUAGE_CONFIG
 from src.utils.logger import setup_logging_with_increment, get_logger
+from datetime import datetime
 import logging
 
 
@@ -124,6 +128,143 @@ class ThreatProcessingPipeline:
         
         # Process through pipeline
         return self.process_report(report)
+    
+    def _dict_to_processed_report(self, report_dict: dict) -> ProcessedReport:
+        """
+        Reconstruct a ProcessedReport from a dictionary (loaded from storage).
+        
+        Args:
+            report_dict: Dictionary representation of ProcessedReport
+            
+        Returns:
+            ProcessedReport object
+        """
+        # Parse validation result
+        validation_dict = report_dict.get("validation", {})
+        entities_dict = validation_dict.get("entities", {})
+        entities = ExtractedEntities(
+            who=entities_dict.get("who", []),
+            what=entities_dict.get("what", []),
+            where=entities_dict.get("where", []),
+            when=entities_dict.get("when", [])
+        )
+        
+        field_scores = [
+            FieldCompleteness(**field_dict)
+            for field_dict in validation_dict.get("field_scores", [])
+        ]
+        
+        validation = ValidationResult(
+            status=ValidationStatus(validation_dict.get("status", "incomplete")),
+            overall_completeness=validation_dict.get("overall_completeness", 0.0),
+            entities=entities,
+            field_scores=field_scores,
+            missing_fields=validation_dict.get("missing_fields", []),
+            prompts=validation_dict.get("prompts", []),
+            timestamp=datetime.fromisoformat(validation_dict.get("timestamp", datetime.now().isoformat()))
+        )
+        
+        # Parse escalation result
+        escalation_dict = report_dict.get("escalation", {})
+        escalation = EscalationResult(
+            severity=SeverityLevel(escalation_dict.get("severity", "Low")),
+            priority_score=escalation_dict.get("priority_score", 0.0),
+            escalation_window_minutes=escalation_dict.get("escalation_window_minutes", 1440),
+            urgency_keywords_found=escalation_dict.get("urgency_keywords_found", []),
+            classification_confidence=escalation_dict.get("classification_confidence", 0.0),
+            requires_immediate_alert=escalation_dict.get("requires_immediate_alert", False),
+            timestamp=datetime.fromisoformat(escalation_dict.get("timestamp", datetime.now().isoformat()))
+        )
+        
+        # Create ProcessedReport
+        return ProcessedReport(
+            report_id=report_dict.get("report_id"),
+            raw_message=report_dict.get("raw_message", ""),
+            source=report_dict.get("source", "whatsapp"),
+            received_at=datetime.fromisoformat(report_dict.get("received_at", datetime.now().isoformat())),
+            validation=validation,
+            escalation=escalation,
+            status=report_dict.get("status", "processed"),
+            processed_at=datetime.fromisoformat(report_dict.get("processed_at", datetime.now().isoformat())),
+            metadata=report_dict.get("metadata", {})
+        )
+    
+    def update_report(self, existing_report_id: str, new_message: str) -> ProcessedReport:
+        """
+        Update an existing report with additional information.
+        Merges new message with existing message and re-processes.
+        
+        Args:
+            existing_report_id: ID of the existing report to update
+            new_message: New message text to merge with existing report
+            
+        Returns:
+            Updated ProcessedReport
+        """
+        self.logger.info(f"Updating report {existing_report_id} with new message")
+        
+        # Load existing report from storage
+        report_dict = self.storage.load_report(existing_report_id)
+        if not report_dict:
+            raise ValueError(f"Report {existing_report_id} not found in storage")
+        
+        # Reconstruct ProcessedReport from dict
+        existing_report = self._dict_to_processed_report(report_dict)
+        
+        # Merge messages: combine existing message with new message
+        merged_message = f"{existing_report.raw_message}\n\n{new_message}"
+        self.logger.debug(f"Merged message length: {len(merged_message)} characters")
+        
+        # Create a new ThreatReport with merged message
+        # Keep original report_id, received_at, and source
+        updated_report = ThreatReport(
+            report_id=existing_report.report_id,
+            raw_message=merged_message,
+            source=existing_report.source,
+            received_at=existing_report.received_at,
+            metadata=existing_report.metadata
+        )
+        
+        # Re-validate with merged message
+        self.logger.info("Re-validating merged report...")
+        validation_result = self.validator.validate(
+            text=merged_message,
+            language="sw"  # Always Swahili
+        )
+        updated_report.validation_result = validation_result
+        
+        # Re-escalate with merged message
+        self.logger.info("Re-escalating merged report...")
+        escalation_result = self.escalator.escalate(
+            text=merged_message,
+            validation_result=validation_result
+        )
+        updated_report.escalation_result = escalation_result
+        
+        # Create updated ProcessedReport
+        updated_processed_report = ProcessedReport(
+            report_id=existing_report.report_id,
+            raw_message=merged_message,
+            source=existing_report.source,
+            received_at=existing_report.received_at,
+            validation=validation_result,
+            escalation=escalation_result,
+            status="updated",
+            processed_at=datetime.now(),
+            metadata=existing_report.metadata
+        )
+        
+        # Save updated report (overwrites existing file)
+        filepath = self.storage.save_report(updated_processed_report)
+        
+        self.logger.success(
+            f"Report {existing_report_id} updated successfully. "
+            f"Severity: {escalation_result.severity.value}, "
+            f"Completeness: {validation_result.overall_completeness:.2f}, "
+            f"Saved to: {filepath}"
+        )
+        
+        return updated_processed_report
     
     def process_simulated_messages(self, count: int = 5) -> list:
         """

@@ -16,6 +16,7 @@ from dotenv import load_dotenv
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from agents.main import ThreatProcessingPipeline
+from agents.conversation_manager import ConversationManager
 from agents.config import TWILIO_CONFIG, FIELD_PROMPTS, LANGUAGE_CONFIG
 from agents.data_models import ValidationStatus, SeverityLevel
 from src.utils.logger import setup_logging_with_increment, get_logger
@@ -38,46 +39,86 @@ if TWILIO_CONFIG["account_sid"] and TWILIO_CONFIG["auth_token"]:
 # Initialize pipeline
 pipeline = None
 
-# Response message templates in Swahili
+# Initialize conversation manager
+conversation_manager = None
+
+# Response message templates in Swahili with structured formatting
 RESPONSE_MESSAGES = {
+    "header": (
+        "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+        "📋 TAARIFA YA TISHIO\n"
+        "━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    ),
     "receipt_confirmation": (
-        "Asante! Taarifa yako imepokelewa. "
-        "Tunaichambua sasa hivi. Nambari ya taarifa: {report_id}"
+        "✅ *Taarifa Imepokelewa*\n\n"
+        "Asante! Taarifa yako imepokelewa na tunaichambua sasa hivi.\n\n"
+        "🆔 *Nambari ya Taarifa:* {report_id}"
+    ),
+    "update_confirmation": (
+        "🔄 *Taarifa Imesasishwa*\n\n"
+        "Asante! Taarifa yako imesasishwa na tunaichambua tena.\n\n"
+        "🆔 *Nambari ya Taarifa:* {report_id}"
     ),
     "processing_complete": (
-        "Taarifa yako imechambuliwa. "
-        "Kiwango cha hatari: {severity}. "
-        "Kamili: {completeness:.0%}"
+        "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+        "📊 *Matokeo ya Uchambuzi*\n"
+        "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
+        "🎯 *Kiwango cha Hatari:* {severity}\n"
+        "📈 *Kamili:* {completeness:.0%}"
     ),
     "missing_info": (
-        "Asante kwa taarifa yako. "
-        "Tafadhali toa maelezo zaidi kuhusu: {missing_fields}. "
-        "Hii itasaidia kuchambua taarifa yako kwa usahihi zaidi."
+        "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+        "⚠️ *Maelezo Yanayohitajika*\n"
+        "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
+        "Asante kwa taarifa yako. Ili tuweze kuchambua taarifa yako kwa usahihi, tafadhali ongeza maelezo yafuatayo:\n\n"
+        "{missing_fields}\n\n"
+        "Tuma ujumbe mwingine na maelezo haya ili tuweze kukusaidia haraka zaidi."
     ),
     "critical_acknowledgment": (
-        "Dharura imetambuliwa! "
-        "Taarifa yako imepokelewa na inachambuliwa haraka. "
-        "Tutachukua hatua za haraka."
+        "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+        "🚨 *DHARURA IMETAMBULIWA*\n"
+        "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
+        "Taarifa yako imepokelewa na inachambuliwa haraka.\n"
+        "Tutachukua hatua za haraka zaidi."
     ),
     "high_acknowledgment": (
-        "Hatari kubwa imetambuliwa. "
+        "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+        "⚠️ *HATARI KUBWA*\n"
+        "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
+        "Hatari kubwa imetambuliwa.\n"
         "Taarifa yako inachambuliwa na tutachukua hatua ndani ya dakika 30."
     ),
     "medium_acknowledgment": (
-        "Taarifa yako imepokelewa. "
+        "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+        "📌 *HATARI YA KATI*\n"
+        "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
+        "Taarifa yako imepokelewa.\n"
         "Itachambuliwa na kujumuishwa katika ripoti ya kila siku."
     ),
     "low_acknowledgment": (
-        "Asante kwa taarifa yako. "
+        "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+        "ℹ️ *HATARI YA CHINI*\n"
+        "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
+        "Asante kwa taarifa yako.\n"
         "Itachambuliwa na kujumuishwa katika ripoti ya kila wiki."
     ),
     "error_generic": (
-        "Samahani, kumekuwa na tatizo katika kuchakata taarifa yako. "
+        "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+        "❌ *TATIZO LIMETOKEA*\n"
+        "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
+        "Samahani, kumekuwa na tatizo katika kuchakata taarifa yako.\n"
         "Tafadhali jaribu tena baadaye au wasiliana nasi moja kwa moja."
     ),
     "error_empty": (
-        "Samahani, hujatoa taarifa yoyote. "
+        "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+        "⚠️ *TAARIFA HAIJAPOKELEWA*\n"
+        "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
+        "Samahani, hujatoa taarifa yoyote.\n"
         "Tafadhali toa maelezo ya tishio au tukio."
+    ),
+    "footer": (
+        "\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+        "Asante kwa kutumia huduma yetu"
     )
 }
 
@@ -100,36 +141,46 @@ def get_response_message(key: str, **kwargs) -> str:
         return RESPONSE_MESSAGES["error_generic"]
 
 
+def format_severity_swahili(severity: SeverityLevel) -> str:
+    """
+    Convert severity level to Swahili for display.
+    
+    Args:
+        severity: SeverityLevel enum value
+        
+    Returns:
+        Swahili translation of severity level
+    """
+    severity_map = {
+        SeverityLevel.CRITICAL: "Dharura",
+        SeverityLevel.HIGH: "Kubwa",
+        SeverityLevel.MEDIUM: "Kati",
+        SeverityLevel.LOW: "Chini"
+    }
+    return severity_map.get(severity, severity.value)
+
+
 def format_missing_fields(missing_fields: list) -> str:
     """
-    Format missing fields list into a readable Swahili string.
+    Format missing fields list into a readable Swahili string with bullet points.
+    Uses prompts from FIELD_PROMPTS config to provide clear instructions.
     
     Args:
         missing_fields: List of missing field names
         
     Returns:
-        Formatted string
+        Formatted string with bullet points and clear instructions
     """
     if not missing_fields:
         return ""
     
-    field_names_sw = {
-        "who": "Nani (watu waliohusika)",
-        "what": "Nini (kile kilichotokea)",
-        "where": "Wapi (mahali)",
-        "when": "Lini (wakati/tarehe)"
-    }
-    
     formatted = []
     for field in missing_fields:
-        formatted.append(field_names_sw.get(field, field))
+        # Use the prompt from FIELD_PROMPTS config for clearer instructions
+        prompt = FIELD_PROMPTS.get(field, {}).get("sw", f"Tafadhali toa maelezo kuhusu {field}")
+        formatted.append(f"• {prompt}")
     
-    if len(formatted) == 1:
-        return formatted[0]
-    elif len(formatted) == 2:
-        return f"{formatted[0]} na {formatted[1]}"
-    else:
-        return ", ".join(formatted[:-1]) + f", na {formatted[-1]}"
+    return "\n".join(formatted)
 
 
 def send_whatsapp_message(to: str, message: str) -> bool:
@@ -166,32 +217,47 @@ def send_whatsapp_message(to: str, message: str) -> bool:
         return False
 
 
-def generate_response(processed_report) -> str:
+def generate_response(processed_report, is_update: bool = False) -> str:
     """
     Generate appropriate response message based on processed report.
+    Creates a structured, visually appealing message for WhatsApp.
     
     Args:
         processed_report: ProcessedReport object
+        is_update: Whether this is an update to an existing report
         
     Returns:
-        Response message string
+        Formatted response message string
     """
     validation = processed_report.validation
     escalation = processed_report.escalation
+    severity = escalation.severity
     
-    # Build response message
+    # Build response message with structure
     response_parts = []
     
-    # Add receipt confirmation
-    response_parts.append(
-        get_response_message(
-            "receipt_confirmation",
-            report_id=processed_report.report_id
+    # Add header
+    response_parts.append(get_response_message("header"))
+    response_parts.append("")  # Empty line for spacing
+    
+    # Add receipt confirmation or update confirmation
+    if is_update:
+        response_parts.append(
+            get_response_message(
+                "update_confirmation",
+                report_id=processed_report.report_id
+            )
         )
-    )
+    else:
+        response_parts.append(
+            get_response_message(
+                "receipt_confirmation",
+                report_id=processed_report.report_id
+            )
+        )
+    response_parts.append("")  # Empty line for spacing
     
     # Add severity-specific acknowledgment
-    severity = escalation.severity
     if severity == SeverityLevel.CRITICAL:
         response_parts.append(get_response_message("critical_acknowledgment"))
     elif severity == SeverityLevel.HIGH:
@@ -201,23 +267,41 @@ def generate_response(processed_report) -> str:
     else:
         response_parts.append(get_response_message("low_acknowledgment"))
     
-    # Add missing information request if incomplete
-    if validation.status == ValidationStatus.INCOMPLETE and validation.missing_fields:
+    response_parts.append("")  # Empty line for spacing
+    
+    # Add missing information request if there are missing fields
+    # Show missing info for both INCOMPLETE and FAILED statuses if fields are missing
+    if validation.missing_fields:
         missing_fields_str = format_missing_fields(validation.missing_fields)
         response_parts.append(
             get_response_message("missing_info", missing_fields=missing_fields_str)
         )
-    else:
-        # Add processing summary if complete
+        response_parts.append("")  # Empty line for spacing
+        
+        # Also show current completeness status even when incomplete
+        severity_sw = format_severity_swahili(severity)
         response_parts.append(
             get_response_message(
                 "processing_complete",
-                severity=severity.value,
+                severity=severity_sw,
+                completeness=validation.overall_completeness
+            )
+        )
+    else:
+        # Add processing summary if complete
+        severity_sw = format_severity_swahili(severity)
+        response_parts.append(
+            get_response_message(
+                "processing_complete",
+                severity=severity_sw,
                 completeness=validation.overall_completeness
             )
         )
     
-    return "\n\n".join(response_parts)
+    # Add footer
+    response_parts.append(get_response_message("footer"))
+    
+    return "\n".join(response_parts)
 
 
 @app.before_request
@@ -286,6 +370,13 @@ def webhook():
         resp.message(get_response_message("error_generic"))
         return Response(str(resp), mimetype="text/xml")
     
+    # Check if conversation manager is initialized
+    if conversation_manager is None:
+        logger.error("Conversation manager not initialized")
+        resp = MessagingResponse()
+        resp.message(get_response_message("error_generic"))
+        return Response(str(resp), mimetype="text/xml")
+    
     try:
         # Get message data from Twilio webhook
         incoming_message = request.values.get("Body", "").strip()
@@ -304,21 +395,52 @@ def webhook():
             logger.info(f"Returning TwiML response: {response_message[:100]}...")
             return Response(str(resp), mimetype="text/xml")
         
+        # Check for active session
+        active_session = conversation_manager.get_active_session(sender_number)
+        is_update = False
+        
         # Process message through pipeline
         try:
-            processed_report = pipeline.process_message(
-                message=incoming_message,
-                source="whatsapp_twilio"
-            )
+            if active_session:
+                # Update existing report
+                existing_report_id = active_session.get("report_id")
+                logger.info(f"Active session found for {sender_number}, updating report {existing_report_id}")
+                
+                processed_report = pipeline.update_report(
+                    existing_report_id=existing_report_id,
+                    new_message=incoming_message
+                )
+                is_update = True
+                
+                # Update session timestamp
+                conversation_manager.update_session(sender_number, existing_report_id)
+            else:
+                # Create new report
+                logger.info(f"No active session for {sender_number}, creating new report")
+                processed_report = pipeline.process_message(
+                    message=incoming_message,
+                    source="whatsapp_twilio"
+                )
             
             logger.info(
                 f"Processed report {processed_report.report_id}: "
                 f"Severity={processed_report.escalation.severity.value}, "
-                f"Completeness={processed_report.validation.overall_completeness:.2f}"
+                f"Completeness={processed_report.validation.overall_completeness:.2f}, "
+                f"IsUpdate={is_update}"
             )
             
+            # Manage session based on report completeness
+            if processed_report.validation.status == ValidationStatus.COMPLETE:
+                # Report is complete, close the session
+                conversation_manager.close_session(sender_number)
+                logger.info(f"Report {processed_report.report_id} is complete, session closed")
+            elif not active_session:
+                # Report is incomplete and no session exists, create new session
+                conversation_manager.create_session(sender_number, processed_report.report_id)
+                logger.info(f"Report {processed_report.report_id} is incomplete, session created")
+            
             # Generate response message
-            response_message = generate_response(processed_report)
+            response_message = generate_response(processed_report, is_update=is_update)
             logger.info(f"Generated response message: {response_message[:200]}...")
             
             # Return TwiML response (Twilio will send this message automatically)
@@ -410,7 +532,7 @@ def test_webhook():
 
 def main():
     """Initialize and run the webhook server."""
-    global pipeline
+    global pipeline, conversation_manager
     
     # Setup logging
     log_file_path = setup_logging_with_increment(
@@ -441,6 +563,14 @@ def main():
         logger.info("Threat processing pipeline initialized")
     except Exception as e:
         logger.error(f"Failed to initialize pipeline: {e}", exc_info=True)
+        sys.exit(1)
+    
+    # Initialize conversation manager
+    try:
+        conversation_manager = ConversationManager()
+        logger.info("Conversation manager initialized")
+    except Exception as e:
+        logger.error(f"Failed to initialize conversation manager: {e}", exc_info=True)
         sys.exit(1)
     
     # Get port from config
