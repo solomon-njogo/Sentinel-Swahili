@@ -11,6 +11,10 @@ interface MetricsCardsProps {
 }
 
 export const MetricsCards: React.FC<MetricsCardsProps> = ({ statistics }) => {
+  const highAlerts = statistics.severity_distribution?.High || 0;
+  const mediumAlerts = statistics.severity_distribution?.Medium || 0;
+  const lowAlerts = statistics.severity_distribution?.Low || 0;
+
   return (
     <div className="metrics-container">
       <div className="metrics-header">
@@ -28,14 +32,19 @@ export const MetricsCards: React.FC<MetricsCardsProps> = ({ statistics }) => {
           icon="🔴"
         />
         <MetricCard
-          title="Last 24 Hours"
-          value={statistics.recent_24h.toString()}
-          icon="⏰"
+          title="High Alerts"
+          value={highAlerts.toString()}
+          icon="⚠️"
         />
         <MetricCard
-          title="High Priority"
-          value={statistics.high_priority.toString()}
-          icon="⚠️"
+          title="Medium Alerts"
+          value={mediumAlerts.toString()}
+          icon="🟡"
+        />
+        <MetricCard
+          title="Low Alerts"
+          value={lowAlerts.toString()}
+          icon="🟢"
         />
       </div>
     </div>
