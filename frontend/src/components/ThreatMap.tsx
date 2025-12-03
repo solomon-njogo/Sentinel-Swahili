@@ -67,6 +67,39 @@ export const ThreatMap: React.FC<ThreatMapProps> = ({ alerts }) => {
   else if (maxRange > 1) zoom = 10;
   else if (maxRange > 0.1) zoom = 12;
   else zoom = 14;
+
+  // Build a simple "heatmap" by aggregating alerts into geographic buckets
+  // This avoids extra dependencies while still visualizing density.
+  const bucketed = alertsWithLocation.reduce((acc, alert) => {
+    const lat = typeof alert.lat === 'number' && !isNaN(alert.lat) ? alert.lat : 0;
+    const lon = typeof alert.lon === 'number' && !isNaN(alert.lon) ? alert.lon : 0;
+
+    // Bucket by ~0.2 degrees to group nearby points
+    const bucketLat = Number(lat.toFixed(1));
+    const bucketLon = Number(lon.toFixed(1));
+    const key = `${bucketLat}:${bucketLon}`;
+
+    const severity = alert.severity ?? 0;
+
+    if (!acc[key]) {
+      acc[key] = {
+        lat: bucketLat,
+        lon: bucketLon,
+        count: 0,
+        maxSeverity: severity,
+      };
+    }
+
+    acc[key].count += 1;
+    if (severity > acc[key].maxSeverity) {
+      acc[key].maxSeverity = severity;
+    }
+
+    return acc;
+  }, {} as Record<string, { lat: number; lon: number; count: number; maxSeverity: number }>);
+
+  const heatPoints = Object.values(bucketed);
+  const maxCount = heatPoints.length > 0 ? Math.max(...heatPoints.map(p => p.count)) : 1;
   
   return (
     <div className="map-container">
@@ -80,39 +113,40 @@ export const ThreatMap: React.FC<ThreatMapProps> = ({ alerts }) => {
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
-        {alertsWithLocation.map((alert) => {
-          const severityLabel = alert.severity !== null ? numericToSeverity(alert.severity) : 'Unknown';
+        {heatPoints.map((point, index) => {
+          const severityLabel = numericToSeverity(point.maxSeverity || 0);
           const color = getSeverityColor(severityLabel);
-          const radius = alert.severity && alert.severity >= 8 ? 10 : alert.severity && alert.severity >= 5 ? 8 : 6;
-          
-          // Ensure coordinates are valid numbers
-          const lat = typeof alert.lat === 'number' && !isNaN(alert.lat) ? alert.lat : 0;
-          const lon = typeof alert.lon === 'number' && !isNaN(alert.lon) ? alert.lon : 0;
-          
+          const intensity = point.count / maxCount; // 0–1
+          const radius = 10 + intensity * 25; // larger radius for denser areas
+          const fillOpacity = 0.3 + intensity * 0.4; // more opaque for denser areas
+
           return (
             <CircleMarker
-              key={alert.id}
-              center={[lat, lon]}
+              key={`heat-${index}`}
+              center={[point.lat, point.lon]}
               radius={radius}
               pathOptions={{
-                color: color,
+                color,
                 fillColor: color,
-                fillOpacity: 0.7,
-                weight: 2,
+                fillOpacity,
+                weight: 1,
               }}
             >
               <Popup>
                 <div className="map-popup">
-                  <h4 style={{ color, marginBottom: '10px', borderBottom: `2px solid ${color}`, paddingBottom: '5px' }}>
-                    {severityLabel} Alert
+                  <h4
+                    style={{
+                      color,
+                      marginBottom: '10px',
+                      borderBottom: `2px solid ${color}`,
+                      paddingBottom: '5px',
+                    }}
+                  >
+                    Threat Density
                   </h4>
-                  <p><strong>ID:</strong> {alert.id}</p>
-                  <p><strong>Severity:</strong> {alert.severity?.toFixed(1) || 'N/A'}/10</p>
-                  <p><strong>Coordinates:</strong> {lat.toFixed(6)}, {lon.toFixed(6)}</p>
-                  <p style={{ fontSize: '0.9em', color: '#666' }}>
-                    {alert.text.substring(0, 150)}{alert.text.length > 150 ? '...' : ''}
-                  </p>
-                  {alert.source && <p><strong>Source:</strong> {alert.source}</p>}
+                  <p><strong>Alerts in area:</strong> {point.count}</p>
+                  <p><strong>Max severity in area:</strong> {point.maxSeverity.toFixed(1)}/10 ({severityLabel})</p>
+                  <p><strong>Approx. center:</strong> {point.lat.toFixed(4)}, {point.lon.toFixed(4)}</p>
                 </div>
               </Popup>
             </CircleMarker>
