@@ -1,0 +1,16 @@
+{
+  "generated_at": "2025-12-03T09:08:30.770024+00:00",
+  "counts": {
+    "processed_rows": 0,
+    "alerts_rows": 30,
+    "feedback_rows": 0
+  },
+  "scores": {
+    "concept": 6,
+    "methodology": 7,
+    "technical": 12,
+    "usability": 10,
+    "scalability": 4
+  },
+  "total": 39
+}

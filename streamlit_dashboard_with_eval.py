@@ -34,6 +34,75 @@ def try_parse_json_col(s):
     except Exception:
         return {}
 
+def get_severity_color(severity):
+    """Get color code based on severity level."""
+    if pd.isna(severity) or severity is None:
+        return "#808080"  # Gray for unknown
+    sev = float(severity)
+    if sev >= 8:
+        return "#dc3545"  # Red for high
+    elif sev >= 5:
+        return "#fd7e14"  # Orange for medium
+    else:
+        return "#28a745"  # Green for low
+
+def get_severity_label(severity):
+    """Get severity label based on numeric value."""
+    if pd.isna(severity) or severity is None:
+        return "Unknown"
+    sev = float(severity)
+    if sev >= 8:
+        return "Critical"
+    elif sev >= 5:
+        return "Medium"
+    else:
+        return "Low"
+
+def render_threat_card(threat_row, index):
+    """Render a single threat card with all details."""
+    threat_id = threat_row.get('id', f'Alert-{index}')
+    text = threat_row.get('text', 'No description available')
+    severity = threat_row.get('severity', None)
+    lat = threat_row.get('lat', None)
+    lon = threat_row.get('lon', None)
+    
+    # Get severity color and label
+    severity_color = get_severity_color(severity)
+    severity_label = get_severity_label(severity)
+    severity_value = f"{severity:.1f}" if severity is not None and not pd.isna(severity) else "N/A"
+    
+    # Create card container
+    with st.container():
+        # Severity badge and ID header
+        col1, col2 = st.columns([3, 1])
+        with col1:
+            st.markdown(f"### {threat_id}")
+        with col2:
+            st.markdown(
+                f'<div style="background-color: {severity_color}; color: white; padding: 4px 8px; '
+                f'border-radius: 4px; text-align: center; font-weight: bold; font-size: 0.85em;">'
+                f'{severity_label} ({severity_value})</div>',
+                unsafe_allow_html=True
+            )
+        
+        # Location if available
+        if lat is not None and lon is not None and not pd.isna(lat) and not pd.isna(lon):
+            st.markdown(f"📍 **Location:** {lat:.4f}, {lon:.4f}")
+        
+        # Text with truncation and expand option
+        text_key = f"threat_text_{threat_id}_{index}"
+        if len(str(text)) > 150:
+            truncated_text = str(text)[:150] + "..."
+            expanded = st.checkbox("Show full text", key=text_key, value=False)
+            if expanded:
+                st.markdown(f"**Details:** {text}")
+            else:
+                st.markdown(f"**Details:** {truncated_text}")
+        else:
+            st.markdown(f"**Details:** {text}")
+        
+        st.divider()
+
 def evaluate_all(processed_df, alerts_df, feedback_df):
     # Reuse simplified heuristics from earlier scripts
     report = {}
@@ -78,7 +147,18 @@ with left:
     df_filtered = alerts.copy()
     if 'severity' in df_filtered.columns:
         df_filtered = df_filtered[df_filtered['severity'].fillna(0) >= min_sev]
-    st.dataframe(df_filtered[['id','text','lat','lon','severity']].fillna(''), height=350)
+    
+    # Display threat count
+    threat_count = len(df_filtered)
+    if threat_count > 0:
+        st.markdown(f"**Showing {threat_count} alert(s)**")
+        
+        # Create scrollable container for threat cards
+        with st.container():
+            for index, (_, threat_row) in enumerate(df_filtered.iterrows()):
+                render_threat_card(threat_row, index)
+    else:
+        st.info("No alerts match the current filter criteria.")
 
     st.markdown("### Feedback")
     st.write(feedback)

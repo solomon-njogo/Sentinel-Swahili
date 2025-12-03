@@ -1,0 +1,32 @@
+.map-container {
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  box-shadow: var(--shadow-md);
+  border: 1px solid var(--border-color);
+  margin-bottom: 1rem;
+}
+
+.map-container.empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 500px;
+  background: var(--bg-primary);
+  color: var(--text-secondary);
+}
+
+.map-popup {
+  font-family: 'Inter', sans-serif;
+  min-width: 200px;
+}
+
+.map-popup h4 {
+  margin: 0 0 10px 0;
+  padding-bottom: 5px;
+}
+
+.map-popup p {
+  margin: 5px 0;
+}
+
+

@@ -153,13 +153,14 @@ CONVERSATION_FLOW_CONFIG = {
 FLOW_MESSAGES = {
     "initial_greeting": (
         "Asante kwa kuripoti hii. Nitauliza maswali machache tu "
-        "ili kuelewa hali ya hali zaidi."
+        "kuhusu maelezo ambayo bado hayajakamilika ili kuelewa hali zaidi."
     ),
     "where_question": (
         "Wapi hii inatokea? Eneo, jina la jengo, barabara, au eneo la jumla linatosha."
     ),
     "where_followup": (
-        "Asante. Unaweza kutaja alama ya karibu au eneo? "
+        "Asante kwa maelezo ya eneo uliyotoa. "
+        "Ikiwa kuna alama ya karibu, jina la jengo, au barabara tafadhali ongeza hapa. "
         "Unaweza pia kutuma eneo la moja kwa moja au pini kwenye ramani. "
         "Ikiwa hujui, jibu SKIP."
     ),
@@ -168,7 +169,8 @@ FLOW_MESSAGES = {
         "(Mfano: mtu mwenye shaka, kitu cha hatari, tishio la mtandaoni, nk)"
     ),
     "what_followup": (
-        "Nimeelewa. Unaweza kueleza kwa maneno machache zaidi? "
+        "Nimeelewa maelezo uliyotoa kuhusu kilichotokea. "
+        "Ikiwa unaweza, ongeza maelezo machache zaidi ili tufahamu vizuri. "
         "Ikiwa hujui, jibu SKIP."
     ),
     "who_question": (
@@ -176,8 +178,8 @@ FLOW_MESSAGES = {
         "Jina, maelezo, au 'hajulikani' ni sawa."
     ),
     "who_followup": (
-        "Maelezo yoyote madogo yanasaidia - mavazi, muonekano, au ukubwa wa kikundi. "
-        "Au jibu SKIP."
+        "Maelezo yoyote ya ziada kuhusu watu waliohusika yanasaidia sana "
+        "- mavazi, muonekano, au ukubwa wa kikundi. Au jibu SKIP."
     ),
     "when_question": (
         "Lini hii ilitokea au itatokea? "

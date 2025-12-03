@@ -172,23 +172,167 @@ def convert_agent_reports_to_dataframe(agent_reports: list) -> pd.DataFrame:
     return pd.DataFrame(rows)
 
 
+def render_threat_card(threat_row, index, selected_id=None):
+    """Render a single threat card with all details in a scannable format."""
+    threat_id = threat_row.get('id', f'Alert-{index}')
+    text = threat_row.get('text', 'No description available')
+    severity = threat_row.get('severity', None)
+    lat = threat_row.get('lat', None)
+    lon = threat_row.get('lon', None)
+    source = threat_row.get('source', None)
+    
+    # Get severity label and color
+    if severity is not None and not pd.isna(severity):
+        severity_float = float(severity)
+        severity_label = numeric_to_severity(severity_float)
+        severity_color = get_severity_color(severity_label)
+        severity_value = f"{severity_float:.1f}"
+    else:
+        severity_label = "Unknown"
+        severity_color = "#9CA3AF"
+        severity_value = "N/A"
+    
+    # Determine border class based on severity
+    border_class = f"row-{severity_label.lower()}" if severity_label in ["Critical", "High", "Medium", "Low"] else ""
+    
+    # Highlight selected card
+    is_selected = selected_id == threat_id
+    highlight_style = "border: 2px solid #1E88E5; box-shadow: 0 4px 12px rgba(30, 136, 229, 0.3);" if is_selected else ""
+    
+    # Create card HTML
+    card_html = f"""
+    <div class="report-detail-card {border_class}" style="margin-bottom: 1rem; {highlight_style}">
+        <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 0.75rem;">
+            <h4 style="margin: 0; color: #1A1A1A; font-size: 1.1rem; font-weight: 600;">{threat_id}</h4>
+            <span class="severity-badge severity-{severity_label.lower()}" style="background-color: {severity_color}; color: white; padding: 4px 12px; border-radius: 6px; font-size: 0.85rem; font-weight: 600; white-space: nowrap;">
+                {severity_label} ({severity_value})
+            </span>
+        </div>
+    """
+    
+    # Add location if available
+    if lat is not None and lon is not None and not pd.isna(lat) and not pd.isna(lon):
+        card_html += f"""
+        <div style="margin-bottom: 0.5rem; color: #6B7280; font-size: 0.9rem;">
+            <strong>📍 Location:</strong> {lat:.4f}, {lon:.4f}
+        </div>
+        """
+    
+    # Add source if available
+    if source:
+        card_html += f"""
+        <div style="margin-bottom: 0.5rem; color: #6B7280; font-size: 0.85rem;">
+            <strong>Source:</strong> {source.title()}
+        </div>
+        """
+    
+    # Add text with truncation
+    text_str = str(text)
+    if len(text_str) > 150:
+        truncated_text = text_str[:150] + "..."
+        card_html += f"""
+        <div style="margin-top: 0.5rem;">
+            <strong>Details:</strong> {truncated_text}
+        </div>
+        """
+    else:
+        card_html += f"""
+        <div style="margin-top: 0.5rem;">
+            <strong>Details:</strong> {text_str}
+        </div>
+        """
+    
+    card_html += "</div>"
+    
+    st.markdown(card_html, unsafe_allow_html=True)
+
+def display_alert_details(threat_row, agent_reports=None):
+    """Display detailed information for a threat alert."""
+    threat_id = threat_row.get('id', 'Unknown')
+    source = threat_row.get('source', None)
+    
+    # If it's an agent report, use the detailed agent report display
+    if source == 'agent' and agent_reports:
+        report = next((r for r in agent_reports if r.get('report_id') == threat_id), None)
+        if report:
+            display_agent_report_details(report)
+            return
+    
+    # Otherwise, display database alert details using Streamlit components
+    st.markdown(f"### 📋 Alert: {threat_id}")
+    st.divider()
+    
+    # Basic Information
+    st.markdown("#### 📊 Basic Information")
+    col1, col2, col3 = st.columns(3)
+    
+    with col1:
+        severity = threat_row.get('severity', None)
+        if severity is not None and not pd.isna(severity):
+            severity_float = float(severity)
+            severity_label = numeric_to_severity(severity_float)
+            severity_color = get_severity_color(severity_label)
+            st.markdown(f'<span style="background-color: {severity_color}; color: white; padding: 6px 16px; border-radius: 6px; font-weight: 600; display: inline-block;">{severity_label} ({severity_float:.1f})</span>', unsafe_allow_html=True)
+        else:
+            st.metric("Severity", "Unknown")
+    
+    with col2:
+        source = threat_row.get('source', 'N/A')
+        st.metric("Source", source.title() if source else 'N/A')
+    
+    with col3:
+        if 'received_at' in threat_row:
+            received = threat_row.get('received_at', 'N/A')
+            st.metric("Received At", received if received else 'N/A')
+    
+    st.divider()
+    
+    # Location
+    lat = threat_row.get('lat', None)
+    lon = threat_row.get('lon', None)
+    if lat is not None and lon is not None and not pd.isna(lat) and not pd.isna(lon):
+        st.markdown("#### 📍 Location")
+        st.write(f"**Coordinates:** {lat:.6f}, {lon:.6f}")
+        st.divider()
+    
+    # Full Text
+    text = threat_row.get('text', 'No description available')
+    st.markdown("#### 💬 Full Details")
+    st.info(text)
+    st.divider()
+    
+    # Classification data if available
+    if 'validation' in threat_row or 'escalation' in threat_row:
+        st.markdown("#### 🔍 Classification Data")
+        
+        if 'validation' in threat_row:
+            validation = threat_row.get('validation', {})
+            if validation:
+                st.json(validation)
+        
+        if 'escalation' in threat_row:
+            escalation = threat_row.get('escalation', {})
+            if escalation:
+                st.json(escalation)
+        
+        st.divider()
+    
+    # All available fields in expander
+    with st.expander("🔧 View All Fields"):
+        st.json(threat_row.to_dict() if hasattr(threat_row, 'to_dict') else dict(threat_row))
+
 def display_agent_report_details(report: dict):
     """Display agent report details in a user-friendly UI format with modern card design."""
     if not report:
         st.warning("No report data available")
         return
     
-    # Report Header Card
+    # Report Header
     report_id = report.get('report_id', 'Unknown')
-    with st.container():
-        st.markdown(f"""
-        <div class="report-detail-card">
-            <h3 style="margin-top: 0; color: #1E88E5;">📋 Report: {report_id}</h3>
-        </div>
-        """, unsafe_allow_html=True)
+    st.markdown(f"### 📋 Report: {report_id}")
+    st.divider()
     
-    # Metadata section with styled cards
-    st.markdown('<div class="report-detail-section">', unsafe_allow_html=True)
+    # Metadata section
     st.markdown("#### 📊 Metadata")
     col1, col2, col3 = st.columns(3)
     with col1:
@@ -196,15 +340,15 @@ def display_agent_report_details(report: dict):
         st.metric("Source", source)
     with col2:
         status = report.get('status', 'N/A')
-        status_badge_class = "status-complete" if status == "complete" else "status-incomplete" if status == "incomplete" else "status-error"
-        st.markdown(f'<span class="status-badge {status_badge_class}">{status.title()}</span>', unsafe_allow_html=True)
+        status_color = "#4CAF50" if status == "complete" else "#FF9800" if status == "incomplete" else "#F44336"
+        st.markdown(f'<span style="background-color: {status_color}; color: white; padding: 6px 12px; border-radius: 6px; font-weight: 600;">{status.title()}</span>', unsafe_allow_html=True)
     with col3:
         language = report.get('metadata', {}).get('language', 'N/A')
         st.metric("Language", language.upper() if language else 'N/A')
-    st.markdown('</div>', unsafe_allow_html=True)
+    
+    st.divider()
     
     # Timestamps
-    st.markdown('<div class="report-detail-section">', unsafe_allow_html=True)
     st.markdown("#### ⏰ Timestamps")
     ts_col1, ts_col2 = st.columns(2)
     with ts_col1:
@@ -213,19 +357,18 @@ def display_agent_report_details(report: dict):
     with ts_col2:
         processed = report.get('processed_at', 'N/A')
         st.write(f"**Processed:** {processed}")
-    st.markdown('</div>', unsafe_allow_html=True)
+    
+    st.divider()
     
     # Raw Message
-    st.markdown('<div class="report-detail-section">', unsafe_allow_html=True)
     st.markdown("#### 💬 Raw Message")
     raw_message = report.get('raw_message', 'No message')
     st.info(raw_message)
-    st.markdown('</div>', unsafe_allow_html=True)
+    st.divider()
     
     # Validation Results
     validation = report.get('validation', {})
     if validation:
-        st.markdown('<div class="report-detail-section">', unsafe_allow_html=True)
         st.markdown("#### ✅ Validation Results")
         
         # Overall completeness with progress bar
@@ -235,16 +378,11 @@ def display_agent_report_details(report: dict):
         val_col1, val_col2 = st.columns(2)
         with val_col1:
             st.metric("Overall Completeness", f"{completeness:.1%}")
-            # Progress bar
-            progress_color = "progress-success" if completeness >= 0.8 else "progress-medium" if completeness >= 0.5 else "progress-critical"
-            st.markdown(f"""
-            <div class="progress-container">
-                <div class="progress-bar {progress_color}" style="width: {completeness * 100}%"></div>
-            </div>
-            """, unsafe_allow_html=True)
+            # Progress bar using Streamlit's progress
+            st.progress(completeness)
         with val_col2:
-            status_badge_class = "status-complete" if val_status == "complete" else "status-incomplete" if val_status == "incomplete" else "status-error"
-            st.markdown(f'<span class="status-badge {status_badge_class}">{val_status.title()}</span>', unsafe_allow_html=True)
+            status_color = "#4CAF50" if val_status == "complete" else "#FF9800" if val_status == "incomplete" else "#F44336"
+            st.markdown(f'<span style="background-color: {status_color}; color: white; padding: 6px 12px; border-radius: 6px; font-weight: 600;">{val_status.title()}</span>', unsafe_allow_html=True)
         
         # Extracted Entities
         entities = validation.get('entities', {})
@@ -305,37 +443,30 @@ def display_agent_report_details(report: dict):
                 is_present = field_score.get('is_present', False)
                 confidence = field_score.get('confidence', 0.0)
                 
-                progress_color = "progress-success" if score >= 0.8 else "progress-medium" if score >= 0.5 else "progress-critical"
                 status_icon = "✅" if is_present else "❌"
                 
-                st.markdown(f"""
-                <div style="margin-bottom: 1rem;">
-                    <div style="display: flex; justify-content: space-between; margin-bottom: 0.25rem;">
-                        <strong>{field_name.title()}</strong>
-                        <span>{score:.1%} {status_icon}</span>
-                    </div>
-                    <div class="progress-container">
-                        <div class="progress-bar {progress_color}" style="width: {score * 100}%"></div>
-                    </div>
-                    <small style="color: #6B7280;">Confidence: {confidence:.1%}</small>
-                </div>
-                """, unsafe_allow_html=True)
+                col1, col2 = st.columns([3, 1])
+                with col1:
+                    st.write(f"**{field_name.title()}** {status_icon}")
+                    st.progress(score)
+                with col2:
+                    st.caption(f"{score:.1%}")
+                st.caption(f"Confidence: {confidence:.1%}")
         
-        st.markdown('</div>', unsafe_allow_html=True)
+        st.divider()
     
     # Escalation Results
     escalation = report.get('escalation', {})
     if escalation:
-        st.markdown('<div class="report-detail-section">', unsafe_allow_html=True)
         st.markdown("#### 🚨 Escalation Results")
         
         severity = escalation.get('severity', 'Unknown')
-        severity_class = f"severity-{severity.lower()}" if severity in ["Critical", "High", "Medium", "Low"] else ""
+        severity_color = get_severity_color(severity)
         
         esc_col1, esc_col2, esc_col3 = st.columns(3)
         
         with esc_col1:
-            st.markdown(f'<span class="severity-badge {severity_class}">{severity}</span>', unsafe_allow_html=True)
+            st.markdown(f'<span style="background-color: {severity_color}; color: white; padding: 6px 12px; border-radius: 6px; font-weight: 600;">{severity}</span>', unsafe_allow_html=True)
             st.metric("Severity Level", severity)
         
         priority_score = escalation.get('priority_score', 0.0)
@@ -350,8 +481,8 @@ def display_agent_report_details(report: dict):
         urgency_keywords = escalation.get('urgency_keywords_found', [])
         if urgency_keywords:
             st.markdown("**Urgency Keywords Found:**")
-            keyword_html = " ".join([f'<span class="keyword-tag">{kw}</span>' for kw in urgency_keywords])
-            st.markdown(keyword_html, unsafe_allow_html=True)
+            keyword_text = ", ".join(urgency_keywords)
+            st.write(keyword_text)
         
         # Escalation window
         window_minutes = escalation.get('escalation_window_minutes', 0)
@@ -369,7 +500,7 @@ def display_agent_report_details(report: dict):
         if requires_alert:
             st.warning("⚠️ **Requires Immediate Alert**")
         
-        st.markdown('</div>', unsafe_allow_html=True)
+        st.divider()
     
     # Run metadata
     run_number = report.get('run_number')
@@ -552,50 +683,54 @@ with left:
     if not df_filtered.empty and 'severity' in df_filtered.columns:
         df_filtered = df_filtered[df_filtered['severity'].fillna(0) >= min_sev]
     
-    # Display filtered alerts with styling
+    # Display filtered alerts with card-based layout
     if not df_filtered.empty:
         st.markdown(f"**Showing {len(df_filtered)} alert(s)**")
-        display_cols = ['id', 'text', 'severity']
-        # Add source column if available
-        if 'source' in df_filtered.columns:
-            display_cols.append('source')
+        st.markdown("<br>", unsafe_allow_html=True)
         
-        # Create styled dataframe
-        display_df = df_filtered[display_cols].copy() if all(col in df_filtered.columns for col in display_cols) else df_filtered.copy()
+        # Create list of threat options for selection
+        threat_options = []
+        threat_dict = {}
+        for index, (_, row) in enumerate(df_filtered.iterrows()):
+            threat_id = row.get('id', f'Alert-{index}')
+            severity = row.get('severity', None)
+            if severity is not None and not pd.isna(severity):
+                severity_label = numeric_to_severity(float(severity))
+            else:
+                severity_label = "Unknown"
+            text_preview = str(row.get('text', ''))[:60] + "..." if len(str(row.get('text', ''))) > 60 else str(row.get('text', ''))
+            option_label = f"{threat_id} [{severity_label}] - {text_preview}"
+            threat_options.append(option_label)
+            threat_dict[option_label] = (index, threat_id)
         
-        # Add severity labels
-        if 'severity' in display_df.columns:
-            display_df['Severity'] = display_df['severity'].apply(numeric_to_severity)
-            display_df = display_df.drop('severity', axis=1)
-        
-        # Truncate text for display
-        if 'text' in display_df.columns:
-            display_df['text'] = display_df['text'].apply(lambda x: x[:100] + "..." if isinstance(x, str) and len(x) > 100 else x)
-        
-        st.dataframe(
-            display_df.fillna(''),
-            height=350,
-            use_container_width=True,
-            hide_index=True
+        # Selection dropdown
+        selected_option = st.selectbox(
+            "Select a threat to view details:",
+            options=[""] + threat_options,
+            key="threat_selector",
+            index=0
         )
         
-        # Show agent report details if selected
-        if data_source in ["Agent Reports", "Both"] and not agent_alerts_df.empty and 'source' in df_filtered.columns:
-            agent_ids = df_filtered[df_filtered['source'] == 'agent']['id'].tolist()
-            if agent_ids:
-                st.divider()
-                st.markdown("### 📋 Report Details")
-                selected_ids = st.multiselect(
-                    "Select reports to view:",
-                    options=agent_ids,
-                    default=[],
-                    key="report_details_selector"
-                )
-                for report_id in selected_ids:
-                    report = next((r for r in agent_reports if r.get('report_id') == report_id), None)
-                    if report:
-                        display_agent_report_details(report)
-                        st.divider()
+        st.markdown("<br>", unsafe_allow_html=True)
+        
+        # Get selected threat ID
+        selected_id = None
+        selected_index = None
+        if selected_option and selected_option in threat_dict:
+            selected_index, selected_id = threat_dict[selected_option]
+        
+        # Create scrollable container for threat cards
+        with st.container():
+            for index, (_, threat_row) in enumerate(df_filtered.iterrows()):
+                threat_id = threat_row.get('id', f'Alert-{index}')
+                render_threat_card(threat_row, index, selected_id)
+        
+        # Show detailed view when a threat is selected
+        if selected_id is not None and selected_index is not None:
+            st.divider()
+            st.markdown("### 📋 Detailed View")
+            selected_row = df_filtered.iloc[selected_index]
+            display_alert_details(selected_row, agent_reports if data_source in ["Agent Reports", "Both"] else None)
     else:
         st.markdown("""
         <div class="empty-state">

@@ -51,9 +51,33 @@ class EscalationAgent:
             EscalationResult with severity, priority, and escalation window
         """
         self.logger.info("Starting escalation classification")
+
+        # Build structured context from validation result when available.
+        context = None
+        if validation_result is not None:
+            try:
+                entities = validation_result.entities
+                context = {
+                    "raw_text": text,
+                    "who": getattr(entities, "who", []) or [],
+                    "what": getattr(entities, "what", []) or [],
+                    "where": getattr(entities, "where", []) or [],
+                    "when": getattr(entities, "when", []) or [],
+                    "missing_fields": validation_result.missing_fields,
+                    "overall_completeness": validation_result.overall_completeness,
+                    "status": validation_result.status.value,
+                }
+            except Exception as e:
+                # Context is helpful but not critical; log and continue.
+                self.logger.warning(f"Error building escalation context: {e}")
+                context = None
         
-        # Classify severity
-        severity, confidence, urgency_keywords = self.classifier.classify(text, use_keywords=True)
+        # Classify severity using text plus optional structured context
+        severity, confidence, urgency_keywords = self.classifier.classify(
+            text,
+            use_keywords=True,
+            context=context
+        )
         
         self.logger.info(
             f"Classified severity: {severity.value}, "

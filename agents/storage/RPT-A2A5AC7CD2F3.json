@@ -1,0 +1,87 @@
+{
+  "report_id": "RPT-A2A5AC7CD2F3",
+  "raw_message": "imepokea tishio kutoka kwa mwanaume asiyejulikana leo saa 11 asubuhi. Alisema atanifuatilia. Hii ilitokea karibu na stage ya bus ya Roysambu\n\nNini: imepokea tishio kutoka kwa mwanaume asiyejulikana leo saa 11 asub, imepokea tishio kutoka kwa mwanaume asiyejulikana leo saa 11 asubuhi\nWapi: [SKIPPED]\nNani: [SKIPPED]\nLini: leo, asubuhi",
+  "source": "whatsapp_twilio",
+  "received_at": "2025-12-03T12:15:18.509321",
+  "processed_at": "2025-12-03T12:15:47.955897",
+  "status": "updated",
+  "validation": {
+    "status": "complete",
+    "overall_completeness": 0.75,
+    "entities": {
+      "who": [
+        "Roysambu\n\nNini"
+      ],
+      "what": [
+        "imepokea tishio kutoka kwa mwanaume asiyejulikana leo saa 11 asub",
+        "aribu na stage ya bus ya Roysambu Nini: imepokea tishio kutoka kwa mwanaume asiyejulikana leo saa 11 asub",
+        "mwanaume asiyejulikana leo saa 11 asub, imepokea tishio kutoka kwa mwanaume asiyejulikana leo saa 11 asub"
+      ],
+      "where": [],
+      "when": [
+        "leo",
+        "asubuhi",
+        "11 asubuhi"
+      ]
+    },
+    "field_scores": [
+      {
+        "field_name": "who",
+        "score": 1.0,
+        "is_present": true,
+        "extracted_value": "Roysambu\n\nNini",
+        "confidence": 1.0
+      },
+      {
+        "field_name": "what",
+        "score": 1.0,
+        "is_present": true,
+        "extracted_value": "imepokea tishio kutoka kwa mwanaume asiyejulikana leo saa 11 asub, aribu na stage ya bus ya Roysambu Nini: imepokea tishio kutoka kwa mwanaume asiyejulikana leo saa 11 asub, mwanaume asiyejulikana leo saa 11 asub, imepokea tishio kutoka kwa mwanaume asiyejulikana leo saa 11 asub",
+        "confidence": 1.0
+      },
+      {
+        "field_name": "where",
+        "score": 0.0,
+        "is_present": false,
+        "extracted_value": null,
+        "confidence": 0.0
+      },
+      {
+        "field_name": "when",
+        "score": 1.0,
+        "is_present": true,
+        "extracted_value": "leo, asubuhi, 11 asubuhi",
+        "confidence": 1.0
+      }
+    ],
+    "missing_fields": [
+      "where"
+    ],
+    "prompts": [
+      "Tafadhali toa eneo au mahali (Wapi?)"
+    ],
+    "timestamp": "2025-12-03T12:15:47.954023"
+  },
+  "escalation": {
+    "severity": "Critical",
+    "priority_score": 0.97,
+    "escalation_window_minutes": 2,
+    "urgency_keywords_found": [
+      "tishio"
+    ],
+    "classification_confidence": 0.95,
+    "requires_immediate_alert": true,
+    "timestamp": "2025-12-03T12:15:47.955897"
+  },
+  "metadata": {
+    "language": "sw"
+  },
+  "collected_where": "[SKIPPED]",
+  "collected_what": "imepokea tishio kutoka kwa mwanaume asiyejulikana leo saa 11 asub, imepokea tishio kutoka kwa mwanaume asiyejulikana leo saa 11 asubuhi",
+  "collected_who": "[SKIPPED]",
+  "collected_when": "leo, asubuhi",
+  "conversation_flow": {
+    "completed_via_flow": true,
+    "collected_at": "2025-12-03T12:15:47.959644"
+  }
+}
