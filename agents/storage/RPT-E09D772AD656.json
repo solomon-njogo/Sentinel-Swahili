@@ -1,0 +1,84 @@
+{
+  "report_id": "RPT-E09D772AD656",
+  "raw_message": "Kuna silaha zilizopatikana karibu na Stesheni ya Reli, Mombasa. Polisi wamefika. Tarehe: leo saa 2:00 jioni.",
+  "source": "whatsapp_simulator",
+  "received_at": "2025-12-02T07:12:48.242841",
+  "processed_at": "2025-12-03T00:49:48.251862",
+  "status": "processed",
+  "validation": {
+    "status": "complete",
+    "overall_completeness": 1.0,
+    "entities": {
+      "who": [
+        "wamefika",
+        "Kuna silaha",
+        "zilizopatikana karibu",
+        "na Stesheni",
+        "ya Reli",
+        "Polisi wamefika",
+        "leo saa"
+      ],
+      "what": [
+        "Kuna silaha zilizopatikana karibu na Stesheni ya "
+      ],
+      "where": [
+        "Mombasa"
+      ],
+      "when": [
+        "leo",
+        "2:00 jioni",
+        "leo saa 2:00 jioni",
+        "saa 2"
+      ]
+    },
+    "field_scores": [
+      {
+        "field_name": "who",
+        "score": 1.0,
+        "is_present": true,
+        "extracted_value": "wamefika, Kuna silaha, zilizopatikana karibu",
+        "confidence": 1.0
+      },
+      {
+        "field_name": "what",
+        "score": 1.0,
+        "is_present": true,
+        "extracted_value": "Kuna silaha zilizopatikana karibu na Stesheni ya ",
+        "confidence": 1.0
+      },
+      {
+        "field_name": "where",
+        "score": 1.0,
+        "is_present": true,
+        "extracted_value": "Mombasa",
+        "confidence": 1.0
+      },
+      {
+        "field_name": "when",
+        "score": 1.0,
+        "is_present": true,
+        "extracted_value": "leo, 2:00 jioni, leo saa 2:00 jioni",
+        "confidence": 1.0
+      }
+    ],
+    "missing_fields": [],
+    "prompts": [],
+    "timestamp": "2025-12-03T00:49:48.249360"
+  },
+  "escalation": {
+    "severity": "High",
+    "priority_score": 0.6575,
+    "escalation_window_minutes": 30,
+    "urgency_keywords_found": [
+      "silaha"
+    ],
+    "classification_confidence": 0.85,
+    "requires_immediate_alert": false,
+    "timestamp": "2025-12-03T00:49:48.251348"
+  },
+  "metadata": {
+    "simulated_severity": "high",
+    "simulated_completeness": "incomplete",
+    "language": "sw"
+  }
+}

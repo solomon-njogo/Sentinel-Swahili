@@ -1,145 +1,195 @@
 """
-Main script for Swahili Text Data Pipeline
-Orchestrates data ingestion, parsing, and inspection.
+Main Pipeline for Swahili Text Processing and Transformer Fine-tuning
+Orchestrates the complete pipeline from data loading to model training.
+
+Usage:
+    # Run preprocessing pipeline:
+    python main.py
 """
 
-import argparse
-import json
-import os
-from datetime import datetime
-from data_pipeline import DataPipeline
-from data_inspector import DataInspector
-
-
-def save_report(stats: dict, output_path: str):
-    """
-    Save statistics report to JSON file.
-    
-    Args:
-        stats: Statistics dictionary
-        output_path: Path to save the report
-    """
-    with open(output_path, 'w', encoding='utf-8') as f:
-        json.dump(stats, f, indent=2, ensure_ascii=False)
-    print(f"\nReport saved to: {output_path}")
+from src.preprocessing_pipeline import preprocess_dataset
+from src.eda_analyzer import run_eda
+from src.eda_visualizations import generate_all_visualizations
+from src.llama_tokenizer import tokenize_dataset
+from src.llama_finetuner import fine_tune_llama
+from src.model_evaluator import evaluate_model, generate_sample_predictions, save_evaluation_results
+from src.training_visualizations import generate_all_training_visualizations
+from src.utils.logger import setup_logging_with_increment, get_logger
+from datasets import load_from_disk
+import logging
 
 
 def main():
-    """Main execution function."""
-    parser = argparse.ArgumentParser(
-        description="Swahili Text Data Pipeline - Data Engineering and Preprocessing"
+    """Main execution function - orchestrates the complete pipeline."""
+    # Setup logging with incrementing log file
+    log_file_path = setup_logging_with_increment(
+        log_level=logging.INFO,
+        log_dir="logs",
+        prefix="pipeline"
     )
-    parser.add_argument(
-        '--data-dir',
-        type=str,
-        default='data',
-        help='Directory containing data files (default: data)'
-    )
-    parser.add_argument(
-        '--output-dir',
-        type=str,
-        default='reports',
-        help='Directory to save reports (default: reports)'
-    )
-    parser.add_argument(
-        '--files',
-        type=str,
-        nargs='+',
-        default=['train.txt', 'test.txt', 'valid.txt'],
-        help='List of data files to process (default: train.txt test.txt valid.txt)'
-    )
-    parser.add_argument(
-        '--save-report',
-        action='store_true',
-        help='Save detailed report to JSON file'
-    )
+    logger = get_logger(__name__)
     
-    args = parser.parse_args()
+    logger.info(f"Log file: {log_file_path}")
+    logger.info("Starting Swahili Dataset Preprocessing Pipeline")
     
-    # Create output directory if it doesn't exist
-    if args.save_report:
-        os.makedirs(args.output_dir, exist_ok=True)
+    # Run preprocessing on dataset
+    preprocess_dataset(data_dir="data")
     
-    # Initialize pipeline and inspector
-    pipeline = DataPipeline(data_dir=args.data_dir)
-    inspector = DataInspector()
+    # Run Exploratory Data Analysis (EDA)
+    logger.info("\n" + "=" * 80)
+    logger.info("Starting Exploratory Data Analysis (EDA)")
+    logger.info("=" * 80)
     
-    # Process each dataset
-    all_results = {}
-    
-    for filename in args.files:
-        print(f"\n{'='*80}")
-        print(f"Processing: {filename}")
-        print(f"{'='*80}")
+    try:
+        # Run EDA analysis
+        eda_results = run_eda(data_dir="data", output_dir="reports")
         
-        try:
-            # Get basic file info
-            file_info = pipeline.get_dataset_info(filename)
-            print(f"\nFile Information:")
-            for key, value in file_info.items():
-                if key != "error":
-                    print(f"  {key}: {value}")
-            
-            if "error" in file_info:
-                print(f"  ERROR: {file_info['error']}")
-                continue
-            
-            # Parse dataset
-            features, labels, label_format = pipeline.parse_dataset(filename)
-            
-            if not features:
-                print(f"  WARNING: No data found in {filename}")
-                continue
-            
-            # Inspect dataset
-            stats = inspector.inspect_dataset(features, labels if any(l is not None for l in labels) else None)
-            
-            # Add metadata
-            stats["metadata"] = {
-                "filename": filename,
-                "label_format": label_format,
-                "processing_date": datetime.now().isoformat(),
-                "file_info": file_info
-            }
-            
-            # Print summary
-            dataset_name = filename.replace('.txt', '').upper()
-            inspector.print_summary(stats, dataset_name)
-            
-            # Store results
-            all_results[filename] = stats
-            
-            # Save individual report if requested
-            if args.save_report:
-                report_path = os.path.join(
-                    args.output_dir,
-                    f"{filename.replace('.txt', '')}_report.json"
-                )
-                save_report(stats, report_path)
+        # Generate visualizations
+        generate_all_visualizations(eda_results, output_dir="reports")
         
-        except FileNotFoundError as e:
-            print(f"  ERROR: {e}")
-        except Exception as e:
-            print(f"  ERROR processing {filename}: {e}")
-            import traceback
-            traceback.print_exc()
+        logger.info("EDA completed successfully!")
+    except Exception as e:
+        logger.error(f"Error during EDA: {e}", exc_info=True)
+        logger.warning("Continuing despite EDA errors...")
     
-    # Save combined report if requested
-    if args.save_report and all_results:
-        combined_report_path = os.path.join(args.output_dir, "combined_report.json")
-        combined_report = {
-            "processing_date": datetime.now().isoformat(),
-            "datasets": all_results,
-            "summary": {
-                "total_datasets": len(all_results),
-                "dataset_names": list(all_results.keys())
-            }
-        }
-        save_report(combined_report, combined_report_path)
+    # Run Llama 2 Tokenization
+    logger.info("\n" + "=" * 80)
+    logger.info("Starting Llama 2 Tokenization")
+    logger.info("=" * 80)
     
-    print(f"\n{'='*80}")
-    print("Data Pipeline Processing Complete!")
-    print(f"{'='*80}\n")
+    try:
+        tokenization_results = tokenize_dataset(
+            data_dir="data",
+            preprocessed_dir="data/preprocessed",
+            output_dir="data/tokenized",
+            block_size=512,
+            stride=256
+        )
+        
+        # Check if any tokenization succeeded
+        if any(tokenization_results.values()):
+            logger.info("Tokenization completed successfully!")
+        else:
+            logger.warning("Tokenization failed for all datasets. Check logs for details.")
+            
+    except Exception as e:
+        logger.error(f"Error during tokenization: {e}", exc_info=True)
+        logger.warning("Continuing despite tokenization errors...")
+    
+    # Run Fine-tuning with QLoRA
+    logger.info("\n" + "=" * 80)
+    logger.info("Starting Llama 2 Fine-tuning with QLoRA")
+    logger.info("=" * 80)
+    
+    try:
+        # Check if tokenization succeeded before fine-tuning
+        if any(tokenization_results.values()):
+            # Run fine-tuning
+            fine_tuning_results = fine_tune_llama(
+                model_name="meta-llama/Llama-2-7b-hf",
+                tokenized_dir="data/tokenized",
+                output_dir="models/finetuned-llama2-7b",
+                num_epochs=3,
+                learning_rate=2e-4,
+                per_device_train_batch_size=4,
+                gradient_accumulation_steps=4,
+                max_length=512,
+                lora_r=16,
+                lora_alpha=32,
+                lora_dropout=0.05,
+                use_4bit=True,
+                save_steps=500,
+                eval_steps=500,
+                logging_steps=100,
+                warmup_steps=100
+            )
+            
+            if fine_tuning_results.get("success"):
+                logger.info("Fine-tuning completed successfully!")
+                
+                # Generate training visualizations
+                logger.info("\n" + "=" * 80)
+                logger.info("Generating Training Visualizations")
+                logger.info("=" * 80)
+                
+                try:
+                    training_history = fine_tuning_results.get("training_history", [])
+                    if training_history:
+                        generate_all_training_visualizations(
+                            training_history,
+                            output_dir="reports"
+                        )
+                        logger.info("Training visualizations generated successfully!")
+                    else:
+                        logger.warning("No training history available for visualization")
+                except Exception as e:
+                    logger.error(f"Error generating visualizations: {e}", exc_info=True)
+                
+                # Evaluate model on test set
+                logger.info("\n" + "=" * 80)
+                logger.info("Evaluating Fine-tuned Model")
+                logger.info("=" * 80)
+                
+                try:
+                    # Load test dataset
+                    test_dataset = None
+                    test_path = "data/tokenized/test"
+                    from pathlib import Path
+                    if Path(test_path).exists():
+                        test_dataset = load_from_disk(test_path)
+                        logger.info(f"Loaded test dataset: {len(test_dataset):,} examples")
+                    
+                    # Evaluate
+                    model_path = fine_tuning_results.get("output_dir", "models/finetuned-llama2-7b")
+                    eval_results = evaluate_model(
+                        model_path=model_path,
+                        test_dataset=test_dataset,
+                        max_length=512,
+                        batch_size=4
+                    )
+                    
+                    if eval_results.get("success"):
+                        logger.info("Evaluation completed successfully!")
+                        logger.info(f"  Test Loss: {eval_results.get('loss', 'N/A'):.4f}")
+                        logger.info(f"  Test Perplexity: {eval_results.get('perplexity', 'N/A'):.2f}")
+                        
+                        # Save evaluation results
+                        save_evaluation_results(
+                            eval_results,
+                            "reports/evaluation_results.json"
+                        )
+                        
+                        # Generate sample predictions
+                        logger.info("\nGenerating sample predictions...")
+                        sample_predictions = generate_sample_predictions(
+                            model_path=model_path,
+                            max_new_tokens=50
+                        )
+                        
+                        if sample_predictions:
+                            logger.info("Sample predictions generated successfully!")
+                            for pred in sample_predictions:
+                                logger.info(f"  Prompt: {pred['prompt']}")
+                                logger.info(f"  Generated: {pred['generated']}")
+                    else:
+                        logger.warning(f"Evaluation failed: {eval_results.get('error', 'Unknown error')}")
+                        
+                except Exception as e:
+                    logger.error(f"Error during evaluation: {e}", exc_info=True)
+                    logger.warning("Continuing despite evaluation errors...")
+                
+            else:
+                logger.error(f"Fine-tuning failed: {fine_tuning_results.get('error', 'Unknown error')}")
+        else:
+            logger.warning("Skipping fine-tuning: Tokenization did not succeed")
+            
+    except Exception as e:
+        logger.error(f"Error during fine-tuning: {e}", exc_info=True)
+        logger.warning("Continuing despite fine-tuning errors...")
+    
+    logger.info("\n" + "=" * 80)
+    logger.info("Pipeline execution complete")
+    logger.info("=" * 80)
 
 
 if __name__ == "__main__":

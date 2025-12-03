@@ -1,0 +1,74 @@
+{
+  "report_id": "RPT-52909C7D0088",
+  "raw_message": "Ni watu watatu, Jana usiku",
+  "source": "whatsapp_twilio",
+  "received_at": "2025-12-03T03:21:26.029341",
+  "processed_at": "2025-12-03T03:21:26.029341",
+  "status": "processed",
+  "validation": {
+    "status": "incomplete",
+    "overall_completeness": 0.4,
+    "entities": {
+      "who": [
+        "watatu"
+      ],
+      "what": [],
+      "where": [],
+      "when": [
+        "Jana",
+        "usiku"
+      ]
+    },
+    "field_scores": [
+      {
+        "field_name": "who",
+        "score": 1.0,
+        "is_present": true,
+        "extracted_value": "watatu",
+        "confidence": 1.0
+      },
+      {
+        "field_name": "what",
+        "score": 0.0,
+        "is_present": false,
+        "extracted_value": null,
+        "confidence": 0.0
+      },
+      {
+        "field_name": "where",
+        "score": 0.0,
+        "is_present": false,
+        "extracted_value": null,
+        "confidence": 0.0
+      },
+      {
+        "field_name": "when",
+        "score": 1.0,
+        "is_present": true,
+        "extracted_value": "Jana, usiku",
+        "confidence": 1.0
+      }
+    ],
+    "missing_fields": [
+      "what",
+      "where"
+    ],
+    "prompts": [
+      "Tafadhali eleza kile kilichotokea au tishio (Nini?)",
+      "Tafadhali toa eneo au mahali (Wapi?)"
+    ],
+    "timestamp": "2025-12-03T03:21:26.029341"
+  },
+  "escalation": {
+    "severity": "Low",
+    "priority_score": 0.125,
+    "escalation_window_minutes": 10080,
+    "urgency_keywords_found": [],
+    "classification_confidence": 0.5,
+    "requires_immediate_alert": false,
+    "timestamp": "2025-12-03T03:21:26.029341"
+  },
+  "metadata": {
+    "language": "sw"
+  }
+}

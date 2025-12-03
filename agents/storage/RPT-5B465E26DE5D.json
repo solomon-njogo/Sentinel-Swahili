@@ -1,0 +1,84 @@
+{
+  "report_id": "RPT-5B465E26DE5D",
+  "raw_message": "Kuna mtu anatembea Na kisu Nairobi\n\nNini: Kuna mtu anatembea Na kisu Nairobi\nWapi: Nairobi\nNani: Ni mwanaume\nLini: Sasa",
+  "source": "whatsapp_twilio",
+  "received_at": "2025-12-03T04:28:22.843084",
+  "processed_at": "2025-12-03T04:28:53.029041",
+  "status": "updated",
+  "validation": {
+    "status": "complete",
+    "overall_completeness": 1.0,
+    "entities": {
+      "who": [
+        "Nairobi\n\nNini",
+        "Nairobi\nWapi",
+        "Nairobi\nNani"
+      ],
+      "what": [
+        "Kuna mtu anatembea Na kisu Nairobi Nini: Kuna mtu anatembea Na kisu Nairobi",
+        "mbea Na kisu Nairobi Nini: Kuna mtu anatembea Na kisu Nairobi Wapi: Nairobi Nani: Ni mwanaume Lini: Sas"
+      ],
+      "where": [
+        "Nairobi"
+      ],
+      "when": [
+        "Sasa"
+      ]
+    },
+    "field_scores": [
+      {
+        "field_name": "who",
+        "score": 1.0,
+        "is_present": true,
+        "extracted_value": "Nairobi\n\nNini, Nairobi\nWapi, Nairobi\nNani",
+        "confidence": 1.0
+      },
+      {
+        "field_name": "what",
+        "score": 1.0,
+        "is_present": true,
+        "extracted_value": "Kuna mtu anatembea Na kisu Nairobi Nini: Kuna mtu anatembea Na kisu Nairobi, mbea Na kisu Nairobi Nini: Kuna mtu anatembea Na kisu Nairobi Wapi: Nairobi Nani: Ni mwanaume Lini: Sas",
+        "confidence": 1.0
+      },
+      {
+        "field_name": "where",
+        "score": 1.0,
+        "is_present": true,
+        "extracted_value": "Nairobi",
+        "confidence": 1.0
+      },
+      {
+        "field_name": "when",
+        "score": 1.0,
+        "is_present": true,
+        "extracted_value": "Sasa",
+        "confidence": 1.0
+      }
+    ],
+    "missing_fields": [],
+    "prompts": [],
+    "timestamp": "2025-12-03T04:28:53.025672"
+  },
+  "escalation": {
+    "severity": "Critical",
+    "priority_score": 0.97,
+    "escalation_window_minutes": 2,
+    "urgency_keywords_found": [
+      "sasa"
+    ],
+    "classification_confidence": 0.95,
+    "requires_immediate_alert": true,
+    "timestamp": "2025-12-03T04:28:53.029041"
+  },
+  "metadata": {
+    "language": "sw"
+  },
+  "collected_where": "Nairobi",
+  "collected_what": "Kuna mtu anatembea Na kisu Nairobi",
+  "collected_who": "Ni mwanaume",
+  "collected_when": "Sasa",
+  "conversation_flow": {
+    "completed_via_flow": true,
+    "collected_at": "2025-12-03T04:28:53.034423"
+  }
+}

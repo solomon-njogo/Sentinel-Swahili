@@ -1,0 +1,85 @@
+{
+  "report_id": "RPT-F49B4C1CAEBA",
+  "raw_message": "Weapon threat at Mlimani Secondary School, Nairobi. Teacher John Kamau saw a student with a knife. Date: tomorrow at 8:00 AM. Please take action.",
+  "source": "whatsapp_simulator",
+  "received_at": "2025-12-02T15:41:48.255772",
+  "processed_at": "2025-12-03T00:49:48.260630",
+  "status": "processed",
+  "validation": {
+    "status": "complete",
+    "overall_completeness": 1.0,
+    "entities": {
+      "who": [
+        "Weapon threat",
+        "at Mlimani",
+        "Secondary School",
+        "Teacher John",
+        "Kamau saw",
+        "student with",
+        "tomorrow at",
+        "Please take"
+      ],
+      "what": [
+        "Weapon threat at Mlimani Secondary School, Nairobi. ",
+        "Weapon threat at Mlimani Secondary School, "
+      ],
+      "where": [
+        "Nairobi"
+      ],
+      "when": [
+        "tomorrow",
+        "8:00 AM"
+      ]
+    },
+    "field_scores": [
+      {
+        "field_name": "who",
+        "score": 1.0,
+        "is_present": true,
+        "extracted_value": "Weapon threat, at Mlimani, Secondary School",
+        "confidence": 1.0
+      },
+      {
+        "field_name": "what",
+        "score": 1.0,
+        "is_present": true,
+        "extracted_value": "Weapon threat at Mlimani Secondary School, Nairobi. , Weapon threat at Mlimani Secondary School, ",
+        "confidence": 1.0
+      },
+      {
+        "field_name": "where",
+        "score": 1.0,
+        "is_present": true,
+        "extracted_value": "Nairobi",
+        "confidence": 1.0
+      },
+      {
+        "field_name": "when",
+        "score": 1.0,
+        "is_present": true,
+        "extracted_value": "tomorrow, 8:00 AM",
+        "confidence": 1.0
+      }
+    ],
+    "missing_fields": [],
+    "prompts": [],
+    "timestamp": "2025-12-03T00:49:48.258379"
+  },
+  "escalation": {
+    "severity": "High",
+    "priority_score": 0.6775,
+    "escalation_window_minutes": 30,
+    "urgency_keywords_found": [
+      "weapon",
+      "threat"
+    ],
+    "classification_confidence": 0.85,
+    "requires_immediate_alert": false,
+    "timestamp": "2025-12-03T00:49:48.260101"
+  },
+  "metadata": {
+    "simulated_severity": "high",
+    "simulated_completeness": "complete",
+    "language": "en"
+  }
+}

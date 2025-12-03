@@ -1,0 +1,87 @@
+{
+  "report_id": "RPT-5948BFF317D4",
+  "raw_message": "Kuna tishio la silaha katika Shule ya Sekondari ya Mlimani, Nairobi. Mwalimu John Kamau ameona mwanafunzi akiwa na kisu. Tarehe: kesho saa 8:00 asubuhi. Tafadhali chukua hatua.",
+  "source": "whatsapp_simulator",
+  "received_at": "2025-12-02T18:27:01.872616",
+  "processed_at": "2025-12-03T00:55:01.882679",
+  "status": "processed",
+  "validation": {
+    "status": "complete",
+    "overall_completeness": 1.0,
+    "entities": {
+      "who": [
+        "Mwalimu John Kamau"
+      ],
+      "what": [
+        "Kuna tishio la silaha katika Shule ya Sekondari ya Mlimani, N",
+        "Kuna tishio la silaha katika Shule ya Sekondari ya Mlimani, Nairobi. Mw",
+        "bi. Mwalimu John Kamau ameona mwanafunzi akiwa na kisu. Tarehe: kesho saa 8:00 asubuhi. Tafadhali chukua",
+        "Kuna tishio la silaha katika Shule ya Sekondari ya Mlimani, Nairobi"
+      ],
+      "where": [
+        "Nairobi",
+        "Shule ya Sekondari ya Mlimani",
+        "Sekondari ya Mlimani"
+      ],
+      "when": [
+        "kesho",
+        "asubuhi",
+        "8:00 asubuhi",
+        "8:00 asubuhi",
+        "kesho saa 8:00 asubuhi"
+      ]
+    },
+    "field_scores": [
+      {
+        "field_name": "who",
+        "score": 1.0,
+        "is_present": true,
+        "extracted_value": "Mwalimu John Kamau",
+        "confidence": 1.0
+      },
+      {
+        "field_name": "what",
+        "score": 1.0,
+        "is_present": true,
+        "extracted_value": "Kuna tishio la silaha katika Shule ya Sekondari ya Mlimani, N, Kuna tishio la silaha katika Shule ya Sekondari ya Mlimani, Nairobi. Mw, bi. Mwalimu John Kamau ameona mwanafunzi akiwa na kisu. Tarehe: kesho saa 8:00 asubuhi. Tafadhali chukua",
+        "confidence": 1.0
+      },
+      {
+        "field_name": "where",
+        "score": 1.0,
+        "is_present": true,
+        "extracted_value": "Nairobi, Shule ya Sekondari ya Mlimani, Sekondari ya Mlimani",
+        "confidence": 1.0
+      },
+      {
+        "field_name": "when",
+        "score": 1.0,
+        "is_present": true,
+        "extracted_value": "kesho, asubuhi, 8:00 asubuhi",
+        "confidence": 1.0
+      }
+    ],
+    "missing_fields": [],
+    "prompts": [],
+    "timestamp": "2025-12-03T00:55:01.881682"
+  },
+  "escalation": {
+    "severity": "Critical",
+    "priority_score": 0.97,
+    "escalation_window_minutes": 2,
+    "urgency_keywords_found": [
+      "tishio"
+    ],
+    "classification_confidence": 0.95,
+    "requires_immediate_alert": true,
+    "timestamp": "2025-12-03T00:55:01.882493"
+  },
+  "metadata": {
+    "simulated_severity": "high",
+    "simulated_completeness": "complete",
+    "language": "sw"
+  },
+  "run_number": 4,
+  "report_number_in_run": 1,
+  "log_file": "agents_004.log"
+}

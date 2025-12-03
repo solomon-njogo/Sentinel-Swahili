@@ -1,0 +1,86 @@
+{
+  "report_id": "RPT-31A6CC00F82F",
+  "raw_message": "URGENT! Shooting attack at Mwenge Market, Dar es Salaam. Many people injured. Please come quickly. Date: today at 3:00 PM. Attackers: Two people wearing black clothes.",
+  "source": "whatsapp_simulator",
+  "received_at": "2025-12-02T16:03:48.283119",
+  "processed_at": "2025-12-03T00:49:48.286713",
+  "status": "processed",
+  "validation": {
+    "status": "complete",
+    "overall_completeness": 1.0,
+    "entities": {
+      "who": [
+        "Shooting attack",
+        "at Mwenge",
+        "Dar es",
+        "Many people",
+        "Please come",
+        "today at",
+        "Two people",
+        "wearing black"
+      ],
+      "what": [
+        "URGENT! Shooting attack at Mwenge Market, Dar es ",
+        "URGENT! Shooting attack at Mwenge Market, Dar "
+      ],
+      "where": [
+        "Dar es Salaam"
+      ],
+      "when": [
+        "today",
+        "3:00 PM"
+      ]
+    },
+    "field_scores": [
+      {
+        "field_name": "who",
+        "score": 1.0,
+        "is_present": true,
+        "extracted_value": "Shooting attack, at Mwenge, Dar es",
+        "confidence": 1.0
+      },
+      {
+        "field_name": "what",
+        "score": 1.0,
+        "is_present": true,
+        "extracted_value": "URGENT! Shooting attack at Mwenge Market, Dar es , URGENT! Shooting attack at Mwenge Market, Dar ",
+        "confidence": 1.0
+      },
+      {
+        "field_name": "where",
+        "score": 1.0,
+        "is_present": true,
+        "extracted_value": "Dar es Salaam",
+        "confidence": 1.0
+      },
+      {
+        "field_name": "when",
+        "score": 1.0,
+        "is_present": true,
+        "extracted_value": "today, 3:00 PM",
+        "confidence": 1.0
+      }
+    ],
+    "missing_fields": [],
+    "prompts": [],
+    "timestamp": "2025-12-03T00:49:48.284886"
+  },
+  "escalation": {
+    "severity": "Critical",
+    "priority_score": 1.0,
+    "escalation_window_minutes": 2,
+    "urgency_keywords_found": [
+      "attack",
+      "shooting",
+      "urgent"
+    ],
+    "classification_confidence": 0.95,
+    "requires_immediate_alert": true,
+    "timestamp": "2025-12-03T00:49:48.286356"
+  },
+  "metadata": {
+    "simulated_severity": "critical",
+    "simulated_completeness": "complete",
+    "language": "en"
+  }
+}

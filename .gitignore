@@ -125,6 +125,7 @@ dmypy.json
 # IDE
 .vscode/
 .idea/
+.cursor/
 *.swp
 *.swo
 *~
@@ -137,4 +138,3 @@ reports/*.json
 # Data files (uncomment if you don't want to track data)
 # data/
 # *.txt
-

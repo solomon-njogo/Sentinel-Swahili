@@ -1,0 +1,75 @@
+{
+  "report_id": "RPT-9C01B64B0F8D",
+  "raw_message": "Ni mwanaume Mkubwa . Inafanyika Kwa sasa",
+  "source": "whatsapp_twilio",
+  "received_at": "2025-12-03T03:27:00.530617",
+  "processed_at": "2025-12-03T03:27:00.531637",
+  "status": "processed",
+  "validation": {
+    "status": "incomplete",
+    "overall_completeness": 0.4,
+    "entities": {
+      "who": [
+        "Inafanyika Kwa"
+      ],
+      "what": [],
+      "where": [],
+      "when": [
+        "sasa"
+      ]
+    },
+    "field_scores": [
+      {
+        "field_name": "who",
+        "score": 1.0,
+        "is_present": true,
+        "extracted_value": "Inafanyika Kwa",
+        "confidence": 1.0
+      },
+      {
+        "field_name": "what",
+        "score": 0.0,
+        "is_present": false,
+        "extracted_value": null,
+        "confidence": 0.0
+      },
+      {
+        "field_name": "where",
+        "score": 0.0,
+        "is_present": false,
+        "extracted_value": null,
+        "confidence": 0.0
+      },
+      {
+        "field_name": "when",
+        "score": 1.0,
+        "is_present": true,
+        "extracted_value": "sasa",
+        "confidence": 1.0
+      }
+    ],
+    "missing_fields": [
+      "what",
+      "where"
+    ],
+    "prompts": [
+      "Tafadhali eleza kile kilichotokea au tishio (Nini?)",
+      "Tafadhali toa eneo au mahali (Wapi?)"
+    ],
+    "timestamp": "2025-12-03T03:27:00.531637"
+  },
+  "escalation": {
+    "severity": "Critical",
+    "priority_score": 0.97,
+    "escalation_window_minutes": 2,
+    "urgency_keywords_found": [
+      "sasa"
+    ],
+    "classification_confidence": 0.95,
+    "requires_immediate_alert": true,
+    "timestamp": "2025-12-03T03:27:00.531637"
+  },
+  "metadata": {
+    "language": "sw"
+  }
+}

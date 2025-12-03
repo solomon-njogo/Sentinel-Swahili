@@ -15,38 +15,47 @@ A comprehensive data engineering and preprocessing pipeline for Swahili text dat
 ```
 .
 ├── main.py                 # Main orchestration script
-├── data_pipeline.py        # Data ingestion and parsing
-├── data_inspector.py       # Dataset inspection and analysis
-├── text_cleaner.py         # Swahili text cleaning and preprocessing
-├── dataset_splitter.py     # Dataset splitting and encoding utilities
 ├── requirements.txt        # Python dependencies
+├── src/                    # Source code package
+│   ├── __init__.py        # Package initialization
+│   ├── data_pipeline.py   # Data ingestion and parsing
+│   ├── data_inspector.py  # Dataset inspection and analysis
+│   ├── text_cleaner.py    # Swahili text cleaning and preprocessing
+│   └── dataset_splitter.py # Dataset splitting and encoding utilities
 ├── data/                   # Input data directory
 │   ├── train.txt
 │   ├── test.txt
 │   └── valid.txt
-└── reports/                # Generated reports directory
+├── reports/                # Generated reports directory
+├── docs/                   # Documentation
+│   └── GRP14-PROJECT-PROPOSAL.pdf
+└── tests/                  # Test files (optional)
 ```
 
 ## Installation
 
 1. Clone the repository:
+
 ```bash
 git clone https://github.com/solomon-njogo/Sentinel-Swahili.git
 cd Sentinel-Swahili
 ```
 
 2. Create a virtual environment (recommended):
+
 ```bash
 python -m venv venv
 source venv/bin/activate  # On Windows: venv\Scripts\activate
 ```
 
 3. Install dependencies:
+
 ```bash
 pip install -r requirements.txt
 ```
 
 4. (Optional) Download NLTK stopwords data:
+
 ```bash
 python -c "import nltk; nltk.download('stopwords')"
 ```
@@ -56,33 +65,64 @@ python -c "import nltk; nltk.download('stopwords')"
 ### Basic Usage
 
 Process all default datasets (train.txt, test.txt, valid.txt):
+
 ```bash
-python main.py
+py main.py
 ```
 
-### Advanced Usage
+### RoBERTa Fine-tuning for Swahili Conversation
+
+The project now bundles a `train.py` script that fine-tunes transformer models (including `roberta-base`) with LoRA adapters. Three training objectives are supported:
+
+- `classification`: original supervised intent classification flow
+- `mlm`: masked-language modeling
+- `causal`: auto-regressive conversational modeling (recommended for Swahili dialogue)
+
+Run causal fine-tuning on the bundled corpora:
+
+```bash
+py train.py --training-task causal --model-name roberta-base --data-dir data \
+  --block-size 512 --num-epochs 3 --learning-rate 2e-5
+```
+
+Key arguments:
+
+- `--training-task {classification, mlm, causal}`
+- `--model-name` / `--tokenizer-name`
+- `--block-size` and `--block-stride` (causal chunking)
+- `--no-causal-padding`, `--no-shuffle-chunks`
+- `--mlm-probability` (for MLM task)
+- Standard hyperparameters: `--batch-size`, `--learning-rate`, `--num-epochs`
+
+The script automatically reads `data/train.txt`, `data/valid.txt`, and `data/test.txt`, builds the appropriate dataset (including token-level chunking for causal LM), and saves checkpoints under `outputs/` and `checkpoints/`.
+
+### Advanced `main.py` Usage
 
 Process specific files:
+
 ```bash
-python main.py --files train.txt test.txt
+py main.py --files train.txt test.txt
 ```
 
 Specify custom data directory:
+
 ```bash
-python main.py --data-dir /path/to/data
+py main.py --data-dir /path/to/data
 ```
 
 Generate detailed JSON reports:
+
 ```bash
-python main.py --save-report
+py main.py --save-report
 ```
 
 Save reports to custom directory:
+
 ```bash
-python main.py --save-report --output-dir /path/to/reports
+py main.py --save-report --output-dir /path/to/reports
 ```
 
-### Command Line Arguments
+Key arguments:
 
 - `--data-dir`: Directory containing data files (default: `data`)
 - `--output-dir`: Directory to save reports (default: `reports`)
@@ -92,6 +132,7 @@ python main.py --save-report --output-dir /path/to/reports
 ## Data Format
 
 The pipeline supports multiple data formats:
+
 - Numeric prefix format: `1 text content`
 - Tab-separated: `text content\tlabel`
 - Comma-separated: `text content,label`
@@ -100,23 +141,30 @@ The pipeline supports multiple data formats:
 ## Components
 
 ### DataPipeline
+
 Handles data ingestion, parsing, and feature/target separation with automatic format detection.
 
 ### DataInspector
+
 Provides comprehensive dataset analysis including:
+
 - Text statistics (word count, character count, vocabulary size)
 - Label distribution
 - Dataset quality metrics
 - Summary reports
 
 ### SwahiliTextCleaner
+
 Specialized text cleaning for Swahili including:
+
 - Custom Swahili stop-word removal
 - Swahili-specific stemming
 - Text normalization
 
 ### DatasetSplitter
+
 Utilities for dataset manipulation:
+
 - Label encoding
 - Dataset loading and structuring
 - Feature-target separation
@@ -135,7 +183,8 @@ This project is part of SWE2020 coursework.
 
 Solomon Njogo
 
+Lewis Mwangi
+
 ## Repository
 
 https://github.com/solomon-njogo/Sentinel-Swahili.git
-
