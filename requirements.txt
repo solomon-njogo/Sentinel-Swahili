@@ -50,3 +50,8 @@ streamlit-folium>=0.15.0  # Streamlit integration for Folium maps
 folium>=0.14.0  # Interactive maps for visualization
 pandas>=1.5.0  # Data manipulation for dashboard tables
 
+# WhatsApp Bot Dependencies
+twilio>=8.0.0  # Twilio API for WhatsApp integration
+flask>=2.3.0  # Flask web framework for webhook server
+python-dotenv>=1.0.0  # Environment variable management
+

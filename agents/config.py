@@ -2,8 +2,19 @@
 Configuration settings for the multi-agent threat processing system.
 """
 
+import os
 from pathlib import Path
 from typing import Dict, List
+
+# Load environment variables from .env file
+try:
+    from dotenv import load_dotenv
+    # Load .env from project root (parent of agents directory)
+    env_path = Path(__file__).parent.parent / ".env"
+    load_dotenv(dotenv_path=env_path)
+except ImportError:
+    # python-dotenv not installed, skip loading
+    pass
 
 # Base paths
 BASE_DIR = Path(__file__).parent
@@ -119,5 +130,14 @@ LANGUAGE_CONFIG = {
     "primary_language": "sw",  # Swahili
     "fallback_language": "en",  # English
     "supported_languages": ["sw", "en"],
+}
+
+# Twilio WhatsApp configuration
+TWILIO_CONFIG = {
+    "account_sid": os.getenv("TWILIO_ACCOUNT_SID"),
+    "auth_token": os.getenv("TWILIO_AUTH_TOKEN"),
+    "whatsapp_number": os.getenv("TWILIO_WHATSAPP_NUMBER"),  # Format: whatsapp:+14155238886
+    "webhook_url": os.getenv("WEBHOOK_URL", "http://localhost:5000/webhook"),
+    "port": int(os.getenv("PORT", "5000")),
 }
 
