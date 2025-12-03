@@ -28,6 +28,15 @@ export interface AgentReport {
   validation?: Record<string, any>;
   escalation?: Record<string, any>;
   metadata?: Record<string, any>;
+  // Additional fields from full report
+  run_number?: number | null;
+  report_number_in_run?: number | null;
+  log_file?: string | null;
+  collected_where?: string | null;
+  collected_what?: string | null;
+  collected_who?: string | null;
+  collected_when?: string | null;
+  conversation_flow?: Record<string, any>;
 }
 
 export interface Statistics {

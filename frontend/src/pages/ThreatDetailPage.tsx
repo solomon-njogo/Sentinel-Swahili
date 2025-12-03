@@ -18,6 +18,8 @@ export const ThreatDetailPage: React.FC = () => {
   const [agentReport, setAgentReport] = useState<AgentReport | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [showAlertJson, setShowAlertJson] = useState(false);
+  const [showReportJson, setShowReportJson] = useState(false);
   
   useEffect(() => {
     if (!alertId) {
@@ -144,6 +146,87 @@ export const ThreatDetailPage: React.FC = () => {
           {/* Agent Report Sections */}
           {agentReport && (
             <>
+              {/* Agent Report Metadata */}
+              <section className="detail-section">
+                <h2>📋 Agent Report Details</h2>
+                <div className="info-grid">
+                  <div className="info-card">
+                    <label>Report ID</label>
+                    <span>{agentReport.report_id}</span>
+                  </div>
+                  {agentReport.status && (
+                    <div className="info-card">
+                      <label>Status</label>
+                      <span>{agentReport.status}</span>
+                    </div>
+                  )}
+                  {agentReport.run_number !== null && agentReport.run_number !== undefined && (
+                    <div className="info-card">
+                      <label>Run Number</label>
+                      <span>{agentReport.run_number}</span>
+                    </div>
+                  )}
+                  {agentReport.report_number_in_run !== null && agentReport.report_number_in_run !== undefined && (
+                    <div className="info-card">
+                      <label>Report Number in Run</label>
+                      <span>{agentReport.report_number_in_run}</span>
+                    </div>
+                  )}
+                  {agentReport.log_file && (
+                    <div className="info-card">
+                      <label>Log File</label>
+                      <span>{agentReport.log_file}</span>
+                    </div>
+                  )}
+                </div>
+                
+                {/* Collected Data Fields */}
+                {(agentReport.collected_where || agentReport.collected_what || 
+                  agentReport.collected_who || agentReport.collected_when) && (
+                  <div style={{ marginTop: '1.5rem' }}>
+                    <h3 style={{ marginBottom: '1rem', fontSize: '1.2rem', color: 'var(--text-primary)' }}>
+                      📝 Collected Information
+                    </h3>
+                    <div className="info-grid">
+                      {agentReport.collected_where && (
+                        <div className="info-card">
+                          <label>Where</label>
+                          <span>{agentReport.collected_where}</span>
+                        </div>
+                      )}
+                      {agentReport.collected_what && (
+                        <div className="info-card">
+                          <label>What</label>
+                          <span>{agentReport.collected_what}</span>
+                        </div>
+                      )}
+                      {agentReport.collected_who && (
+                        <div className="info-card">
+                          <label>Who</label>
+                          <span>{agentReport.collected_who}</span>
+                        </div>
+                      )}
+                      {agentReport.collected_when && (
+                        <div className="info-card">
+                          <label>When</label>
+                          <span>{agentReport.collected_when}</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+                
+                {/* Metadata */}
+                {agentReport.metadata && Object.keys(agentReport.metadata).length > 0 && (
+                  <div style={{ marginTop: '1.5rem' }}>
+                    <h3 style={{ marginBottom: '1rem', fontSize: '1.2rem', color: 'var(--text-primary)' }}>
+                      📊 Metadata
+                    </h3>
+                    <StructuredDataView data={agentReport.metadata} />
+                  </div>
+                )}
+              </section>
+              
               {agentReport.validation && (
                 <section className="detail-section">
                   <h2>✅ Validation Results</h2>
@@ -157,6 +240,34 @@ export const ThreatDetailPage: React.FC = () => {
                   <StructuredDataView data={agentReport.escalation} />
                 </section>
               )}
+              
+              {/* Conversation Flow */}
+              {agentReport.conversation_flow && Object.keys(agentReport.conversation_flow).length > 0 && (
+                <section className="detail-section">
+                  <h2>💬 Conversation Flow</h2>
+                  <StructuredDataView data={agentReport.conversation_flow} />
+                </section>
+              )}
+              
+              {/* Raw Report JSON */}
+              <section className="detail-section">
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                  <h2 style={{ margin: 0 }}>🔧 View Raw Report JSON</h2>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
+                    <input
+                      type="checkbox"
+                      checked={showReportJson}
+                      onChange={(e) => setShowReportJson(e.target.checked)}
+                    />
+                    <span>Show JSON</span>
+                  </label>
+                </div>
+                {showReportJson && (
+                  <div className="json-section">
+                    <pre>{JSON.stringify(agentReport, null, 2)}</pre>
+                  </div>
+                )}
+              </section>
             </>
           )}
           
@@ -175,6 +286,26 @@ export const ThreatDetailPage: React.FC = () => {
               )}
             </section>
           )}
+          
+          {/* Raw Alert JSON */}
+          <section className="detail-section">
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+              <h2 style={{ margin: 0 }}>🔧 View Raw Alert JSON</h2>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
+                <input
+                  type="checkbox"
+                  checked={showAlertJson}
+                  onChange={(e) => setShowAlertJson(e.target.checked)}
+                />
+                <span>Show JSON</span>
+              </label>
+            </div>
+            {showAlertJson && (
+              <div className="json-section">
+                <pre>{JSON.stringify(alert, null, 2)}</pre>
+              </div>
+            )}
+          </section>
         </div>
       </div>
     </div>

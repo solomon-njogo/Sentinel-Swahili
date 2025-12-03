@@ -17,20 +17,10 @@ async def get_agent_reports():
         data = load_all_data()
         reports = data['agent_reports']
         
-        # Convert to response format
+        # Convert to response format - return full report
         reports_list = []
         for report in reports:
-            reports_list.append({
-                'report_id': report.get('report_id', ''),
-                'raw_message': report.get('raw_message', ''),
-                'source': report.get('source'),
-                'received_at': report.get('received_at'),
-                'processed_at': report.get('processed_at'),
-                'status': report.get('status'),
-                'validation': report.get('validation', {}),
-                'escalation': report.get('escalation', {}),
-                'metadata': report.get('metadata', {})
-            })
+            reports_list.append(report)  # Return full report dict
         
         return reports_list
     except Exception as e:
@@ -50,17 +40,8 @@ async def get_agent_report(report_id: str):
         if not report:
             raise HTTPException(status_code=404, detail="Report not found")
         
-        return {
-            'report_id': report.get('report_id', ''),
-            'raw_message': report.get('raw_message', ''),
-            'source': report.get('source'),
-            'received_at': report.get('received_at'),
-            'processed_at': report.get('processed_at'),
-            'status': report.get('status'),
-            'validation': report.get('validation', {}),
-            'escalation': report.get('escalation', {}),
-            'metadata': report.get('metadata', {})
-        }
+        # Return full report dict
+        return report
     except HTTPException:
         raise
     except Exception as e:

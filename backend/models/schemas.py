@@ -29,6 +29,7 @@ class Alert(AlertBase):
 
     class Config:
         from_attributes = True
+        extra = "allow"  # Allow extra fields in reports
 
 
 class AgentReport(BaseModel):
@@ -42,9 +43,19 @@ class AgentReport(BaseModel):
     validation: Optional[Dict[str, Any]] = None
     escalation: Optional[Dict[str, Any]] = None
     metadata: Optional[Dict[str, Any]] = None
+    # Additional fields from full report
+    run_number: Optional[int] = None
+    report_number_in_run: Optional[int] = None
+    log_file: Optional[str] = None
+    collected_where: Optional[str] = None
+    collected_what: Optional[str] = None
+    collected_who: Optional[str] = None
+    collected_when: Optional[str] = None
+    conversation_flow: Optional[Dict[str, Any]] = None
 
     class Config:
         from_attributes = True
+        extra = "allow"  # Allow extra fields in reports
 
 
 class Statistics(BaseModel):
