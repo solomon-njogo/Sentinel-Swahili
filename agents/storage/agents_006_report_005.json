@@ -1,0 +1,86 @@
+{
+  "report_id": "RPT-006-A0BCB3EC",
+  "raw_message": "Kuna tishio la bunduki katika Chuo Kikuu cha Nairobi, Nairobi. Mtu: Mwanafunzi aliyeitwa James Ochieng. Tarehe: kesho saa 2:00 mchana. Tafadhali chukua hatua haraka.",
+  "source": "whatsapp_simulator",
+  "received_at": "2025-12-02T07:37:04.177486",
+  "processed_at": "2025-12-03T01:13:04.183258",
+  "status": "processed",
+  "validation": {
+    "status": "complete",
+    "overall_completeness": 1.0,
+    "entities": {
+      "who": [
+        "Chuo Kikuu",
+        "James Ochieng"
+      ],
+      "what": [
+        "Kuna tishio la bunduki katika Chuo Kikuu cha Nairobi, Nairobi",
+        "Kuna tishio la bunduki katika Chuo Kikuu cha Nairobi, Nairobi. Mtu: Mwan"
+      ],
+      "where": [
+        "Nairobi",
+        "Chuo Kikuu cha Nairobi"
+      ],
+      "when": [
+        "kesho",
+        "mchana",
+        "2:00 mchana",
+        "2:00",
+        "kesho saa 2:00 mchana"
+      ]
+    },
+    "field_scores": [
+      {
+        "field_name": "who",
+        "score": 1.0,
+        "is_present": true,
+        "extracted_value": "Chuo Kikuu, James Ochieng",
+        "confidence": 1.0
+      },
+      {
+        "field_name": "what",
+        "score": 1.0,
+        "is_present": true,
+        "extracted_value": "Kuna tishio la bunduki katika Chuo Kikuu cha Nairobi, Nairobi, Kuna tishio la bunduki katika Chuo Kikuu cha Nairobi, Nairobi. Mtu: Mwan",
+        "confidence": 1.0
+      },
+      {
+        "field_name": "where",
+        "score": 1.0,
+        "is_present": true,
+        "extracted_value": "Nairobi, Chuo Kikuu cha Nairobi",
+        "confidence": 1.0
+      },
+      {
+        "field_name": "when",
+        "score": 1.0,
+        "is_present": true,
+        "extracted_value": "kesho, mchana, 2:00 mchana",
+        "confidence": 1.0
+      }
+    ],
+    "missing_fields": [],
+    "prompts": [],
+    "timestamp": "2025-12-03T01:13:04.180594"
+  },
+  "escalation": {
+    "severity": "Critical",
+    "priority_score": 0.99,
+    "escalation_window_minutes": 2,
+    "urgency_keywords_found": [
+      "haraka",
+      "tishio"
+    ],
+    "classification_confidence": 0.95,
+    "requires_immediate_alert": true,
+    "timestamp": "2025-12-03T01:13:04.182761"
+  },
+  "metadata": {
+    "simulated_severity": "high",
+    "simulated_completeness": "complete",
+    "language": "sw"
+  },
+  "run_number": 6,
+  "report_number_in_run": 5,
+  "log_file": "agents_006.log"
+}

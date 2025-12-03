@@ -1,0 +1,92 @@
+{
+  "report_id": "RPT-005-1C38C69B",
+  "raw_message": "Dharura! Kuna shambulio la risasi katika Soko la Mwenge, Dar es Salaam. Watu wengi wamejeruhiwa. Tafadhali fika haraka. Tarehe: leo saa 3:00 jioni. Washambuliaji: Watu wawili wamevaa nguo nyeusi.",
+  "source": "whatsapp_simulator",
+  "received_at": "2025-12-02T13:16:05.382428",
+  "processed_at": "2025-12-03T01:03:05.388650",
+  "status": "processed",
+  "validation": {
+    "status": "complete",
+    "overall_completeness": 0.75,
+    "entities": {
+      "who": [],
+      "what": [
+        "Dharura! Kuna shambulio la risasi katika Soko la Mwenge,",
+        "Dharura! Kuna shambulio la risasi katika Soko la Mwenge, Dar es Salaam. W",
+        "Dharura! Kuna shambulio la risasi katika Soko la Mwenge, Dar es Salaam. Watu wengi",
+        "Kuna shambulio la risasi katika Soko la Mwenge, Dar es Salaam"
+      ],
+      "where": [
+        "Dar es Salaam",
+        "Soko la Mwenge",
+        "Mwenge"
+      ],
+      "when": [
+        "leo",
+        "jioni",
+        "3:00 jioni",
+        "3:00 jioni",
+        "leo saa 3:00 jioni"
+      ]
+    },
+    "field_scores": [
+      {
+        "field_name": "who",
+        "score": 0.0,
+        "is_present": false,
+        "extracted_value": null,
+        "confidence": 0.0
+      },
+      {
+        "field_name": "what",
+        "score": 1.0,
+        "is_present": true,
+        "extracted_value": "Dharura! Kuna shambulio la risasi katika Soko la Mwenge,, Dharura! Kuna shambulio la risasi katika Soko la Mwenge, Dar es Salaam. W, Dharura! Kuna shambulio la risasi katika Soko la Mwenge, Dar es Salaam. Watu wengi",
+        "confidence": 1.0
+      },
+      {
+        "field_name": "where",
+        "score": 1.0,
+        "is_present": true,
+        "extracted_value": "Dar es Salaam, Soko la Mwenge, Mwenge",
+        "confidence": 1.0
+      },
+      {
+        "field_name": "when",
+        "score": 1.0,
+        "is_present": true,
+        "extracted_value": "leo, jioni, 3:00 jioni",
+        "confidence": 1.0
+      }
+    ],
+    "missing_fields": [
+      "who"
+    ],
+    "prompts": [
+      "Tafadhali toa taarifa za watu waliohusika (Nani?)"
+    ],
+    "timestamp": "2025-12-03T01:03:05.385446"
+  },
+  "escalation": {
+    "severity": "Critical",
+    "priority_score": 1.0,
+    "escalation_window_minutes": 2,
+    "urgency_keywords_found": [
+      "shambulio",
+      "risasi",
+      "dharura",
+      "haraka"
+    ],
+    "classification_confidence": 0.95,
+    "requires_immediate_alert": true,
+    "timestamp": "2025-12-03T01:03:05.387985"
+  },
+  "metadata": {
+    "simulated_severity": "critical",
+    "simulated_completeness": "complete",
+    "language": "sw"
+  },
+  "run_number": 5,
+  "report_number_in_run": 3,
+  "log_file": "agents_005.log"
+}

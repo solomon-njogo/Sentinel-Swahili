@@ -1,0 +1,84 @@
+{
+  "report_id": "RPT-0A741AB25627",
+  "raw_message": "Bomu limepatikana katika eneo la Kariakoo. Polisi wamefika na kuzuia eneo. Tafadhali fika haraka!",
+  "source": "whatsapp_simulator",
+  "received_at": "2025-12-02T03:52:48.274575",
+  "processed_at": "2025-12-03T00:49:48.279395",
+  "status": "processed",
+  "validation": {
+    "status": "complete",
+    "overall_completeness": 0.85,
+    "entities": {
+      "who": [
+        "wamefika na kuzuia eneo",
+        "Bomu limepatikana",
+        "katika eneo",
+        "la Kariakoo",
+        "Polisi wamefika",
+        "na kuzuia",
+        "Tafadhali fika"
+      ],
+      "what": [
+        "Bomu limepatikana katika eneo la Kariakoo. "
+      ],
+      "where": [
+        "la Kariakoo"
+      ],
+      "when": []
+    },
+    "field_scores": [
+      {
+        "field_name": "who",
+        "score": 1.0,
+        "is_present": true,
+        "extracted_value": "wamefika na kuzuia eneo, Bomu limepatikana, katika eneo",
+        "confidence": 1.0
+      },
+      {
+        "field_name": "what",
+        "score": 1.0,
+        "is_present": true,
+        "extracted_value": "Bomu limepatikana katika eneo la Kariakoo. ",
+        "confidence": 1.0
+      },
+      {
+        "field_name": "where",
+        "score": 1.0,
+        "is_present": true,
+        "extracted_value": "la Kariakoo",
+        "confidence": 1.0
+      },
+      {
+        "field_name": "when",
+        "score": 0.0,
+        "is_present": false,
+        "extracted_value": null,
+        "confidence": 0.0
+      }
+    ],
+    "missing_fields": [
+      "when"
+    ],
+    "prompts": [
+      "Tafadhali toa wakati au tarehe (Lini?)"
+    ],
+    "timestamp": "2025-12-03T00:49:48.276616"
+  },
+  "escalation": {
+    "severity": "Critical",
+    "priority_score": 0.99,
+    "escalation_window_minutes": 2,
+    "urgency_keywords_found": [
+      "bomu",
+      "haraka"
+    ],
+    "classification_confidence": 0.95,
+    "requires_immediate_alert": true,
+    "timestamp": "2025-12-03T00:49:48.278934"
+  },
+  "metadata": {
+    "simulated_severity": "critical",
+    "simulated_completeness": "incomplete",
+    "language": "sw"
+  }
+}
