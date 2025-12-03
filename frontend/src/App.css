@@ -157,8 +157,14 @@
 
 .alerts-section h3,
 .map-section h3 {
-  margin-bottom: var(--spacing-md);
+  margin-bottom: var(--spacing-sm);
   color: var(--text-primary);
+}
+
+.map-info {
+  color: var(--text-secondary);
+  margin-bottom: var(--spacing-md);
+  font-size: 0.875rem;
 }
 
 .alerts-count {
