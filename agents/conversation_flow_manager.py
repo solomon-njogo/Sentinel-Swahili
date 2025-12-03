@@ -300,6 +300,11 @@ class ConversationFlowManager:
     
     def get_initial_greeting(self) -> str:
         """Get initial greeting message"""
-        return self.messages.get("initial_greeting", 
-            "Asante kwa kuripoti hii. Nitauliza maswali machache tu ili kuelewa hali ya hali zaidi.")
+        return self.messages.get(
+            "initial_greeting",
+            (
+                "Asante kwa kuripoti hii. Nitauliza maswali machache tu "
+                "kuhusu maelezo ambayo bado hayajakamilika ili kuelewa hali zaidi."
+            ),
+        )
 

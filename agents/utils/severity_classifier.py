@@ -20,7 +20,7 @@ from src.utils.logger import get_logger
 
 
 class SeverityClassifier:
-    """Classify threat severity using OpenRouter LLM and keyword detection"""
+    """Classify threat severity using OpenRouter LLM and keyword detection."""
     
     def __init__(self, model_name: Optional[str] = None, api_key: Optional[str] = None):
         """
@@ -56,7 +56,12 @@ class SeverityClassifier:
             if not self.api_key:
                 self.logger.warning("OpenRouter API key not found. Using keyword-based classification.")
     
-    def classify(self, text: str, use_keywords: bool = True) -> Tuple[SeverityLevel, float, List[str]]:
+    def classify(
+        self,
+        text: str,
+        use_keywords: bool = True,
+        context: Optional[Dict] = None
+    ) -> Tuple[SeverityLevel, float, List[str]]:
         """
         Classify threat severity.
         
@@ -97,7 +102,7 @@ class SeverityClassifier:
         
         # Use LLM if available, otherwise use keyword-based
         if self.client:
-            return self._classify_with_llm(text, found_keywords)
+            return self._classify_with_llm(text, found_keywords, context=context)
         else:
             # Fallback to keyword-based classification
             if found_keywords:
@@ -107,7 +112,12 @@ class SeverityClassifier:
                     return SeverityLevel.MEDIUM, 0.70, found_keywords
             return SeverityLevel.LOW, 0.50, found_keywords
     
-    def _classify_with_llm(self, text: str, found_keywords: List[str] = None) -> Tuple[SeverityLevel, float, List[str]]:
+    def _classify_with_llm(
+        self,
+        text: str,
+        found_keywords: List[str] = None,
+        context: Optional[Dict] = None
+    ) -> Tuple[SeverityLevel, float, List[str]]:
         """
         Classify using OpenRouter LLM.
         
@@ -121,8 +131,8 @@ class SeverityClassifier:
         if found_keywords is None:
             found_keywords = []
         
-        # Create classification prompt
-        prompt = self._create_classification_prompt(text)
+        # Create classification prompt (optionally including structured context)
+        prompt = self._create_classification_prompt(text, context=context)
         
         try:
             # Call OpenRouter API
@@ -131,7 +141,13 @@ class SeverityClassifier:
                 messages=[
                     {
                         "role": "system",
-                        "content": "You are a security threat analyst. Classify threat reports into severity levels: Low, Medium, High, or Critical. Respond only with valid JSON."
+                        "content": (
+                            "You are a security threat analyst. You receive Swahili threat "
+                            "reports plus structured context (who/what/where/when and "
+                            "missing fields). Your task is ONLY to classify severity into "
+                            "Low, Medium, High, or Critical. Do NOT ask follow-up "
+                            "questions. Respond only with valid JSON."
+                        ),
                     },
                     {
                         "role": "user",
@@ -198,9 +214,17 @@ class SeverityClassifier:
                     return SeverityLevel.MEDIUM, 0.70, found_keywords
             return SeverityLevel.LOW, 0.50, found_keywords
     
-    def _create_classification_prompt(self, text: str) -> str:
-        """Create prompt for LLM classification"""
-        return f"""Analyze the following threat report and classify its severity level.
+    def _create_classification_prompt(
+        self,
+        text: str,
+        context: Optional[Dict] = None
+    ) -> str:
+        """Create prompt for LLM classification.
+
+        If structured context is provided, include it so the model can use
+        extracted entities and missing fields but still only classify severity.
+        """
+        base_prompt = f"""Analyze the following threat report and classify its severity level.
 
 Threat Report:
 {text}
@@ -211,12 +235,33 @@ Classification Guidelines:
 - MEDIUM: Suspicious activity, concerning behavior, potential threats, needs monitoring
 - LOW: Minor concerns, routine security matters, general observations
 
+If structured context is provided, use it to better understand the situation
+but do NOT ask for more information. You are only classifying severity.
+"""
+
+        if context:
+            # Keep context compact but explicit so the model knows what has
+            # already been extracted and which fields are missing.
+            try:
+                context_json = json.dumps(context, ensure_ascii=False)
+            except TypeError:
+                # Fallback if context contains non-serializable values
+                context_json = str(context)
+            base_prompt += f"""
+
+Structured Context (JSON):
+{context_json}
+"""
+
+        base_prompt += """
 Respond with a JSON object in this exact format:
-{{
+{
     "severity": "CRITICAL|HIGH|MEDIUM|LOW",
     "confidence": 0.0-1.0,
     "reasoning": "Brief explanation"
-}}"""
+}"""
+
+        return base_prompt
     
     def _extract_severity_from_text(self, text: str) -> SeverityLevel:
         """Extract severity level from text response if JSON parsing fails"""

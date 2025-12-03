@@ -1,0 +1,87 @@
+{
+  "report_id": "RPT-EDA4EC67812B",
+  "raw_message": "Leo saa 2 jioni nilitishiwa na jamaa asiyejulikana karibu na Uchumi Supermarket, alisema atanifua\n\nNini: MTU mwenye shaka\nWapi: Nairobi\nNani: Uchumi Supermarket\nLini: Leo, jioni",
+  "source": "whatsapp_twilio",
+  "received_at": "2025-12-03T12:51:27.331196",
+  "processed_at": "2025-12-03T12:52:13.460649",
+  "status": "updated",
+  "validation": {
+    "status": "incomplete",
+    "overall_completeness": 0.65,
+    "entities": {
+      "who": [
+        "Uchumi Supermarket",
+        "Nairobi\nNani",
+        "Uchumi Supermarket\nLini"
+      ],
+      "what": [],
+      "where": [
+        "Nairobi"
+      ],
+      "when": [
+        "Leo",
+        "jioni",
+        "2 jioni"
+      ]
+    },
+    "field_scores": [
+      {
+        "field_name": "who",
+        "score": 1.0,
+        "is_present": true,
+        "extracted_value": "Uchumi Supermarket, Nairobi\nNani, Uchumi Supermarket\nLini",
+        "confidence": 1.0
+      },
+      {
+        "field_name": "what",
+        "score": 0.0,
+        "is_present": false,
+        "extracted_value": null,
+        "confidence": 0.0
+      },
+      {
+        "field_name": "where",
+        "score": 1.0,
+        "is_present": true,
+        "extracted_value": "Nairobi",
+        "confidence": 1.0
+      },
+      {
+        "field_name": "when",
+        "score": 1.0,
+        "is_present": true,
+        "extracted_value": "Leo, jioni, 2 jioni",
+        "confidence": 1.0
+      }
+    ],
+    "missing_fields": [
+      "what"
+    ],
+    "prompts": [
+      "Tafadhali eleza kile kilichotokea au tishio (Nini?)"
+    ],
+    "timestamp": "2025-12-03T12:52:13.456599"
+  },
+  "escalation": {
+    "severity": "High",
+    "priority_score": 0.6575,
+    "escalation_window_minutes": 30,
+    "urgency_keywords_found": [
+      "shaka"
+    ],
+    "classification_confidence": 0.85,
+    "requires_immediate_alert": false,
+    "timestamp": "2025-12-03T12:52:13.460649"
+  },
+  "metadata": {
+    "language": "sw"
+  },
+  "collected_where": "Nairobi",
+  "collected_what": "MTU mwenye shaka",
+  "collected_who": "Uchumi Supermarket",
+  "collected_when": "Leo, jioni",
+  "conversation_flow": {
+    "completed_via_flow": true,
+    "collected_at": "2025-12-03T12:52:13.464959"
+  }
+}
