@@ -1,0 +1,78 @@
+.threat-card {
+  background: var(--bg-primary);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-lg);
+  margin-bottom: 1rem;
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--border-color);
+  border-left: 4px solid var(--border-color);
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+.threat-card:hover {
+  box-shadow: var(--shadow-md);
+  transform: translateY(-2px);
+}
+
+.threat-card.selected {
+  border: 2px solid var(--primary-color);
+  box-shadow: 0 4px 12px rgba(30, 136, 229, 0.3);
+}
+
+.threat-card.row-critical {
+  border-left-color: var(--critical-color);
+}
+
+.threat-card.row-high {
+  border-left-color: var(--high-color);
+}
+
+.threat-card.row-medium {
+  border-left-color: var(--medium-color);
+}
+
+.threat-card.row-low {
+  border-left-color: var(--low-color);
+}
+
+.threat-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: start;
+  margin-bottom: 0.75rem;
+}
+
+.threat-card-id {
+  margin: 0;
+  color: var(--text-primary);
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.severity-badge {
+  color: white;
+  padding: 4px 12px;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.threat-card-location,
+.threat-card-source {
+  margin-bottom: 0.5rem;
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+}
+
+.threat-card-source {
+  font-size: 0.85rem;
+}
+
+.threat-card-details {
+  margin-top: 0.5rem;
+  color: var(--text-primary);
+}
+
+
