@@ -1,0 +1,83 @@
+{
+  "report_id": "RPT-005-B0623990",
+  "raw_message": "Bomu limepatikana katika eneo la Kariakoo, Dar es Salaam. Polisi wamefika na kuzuia eneo. Washambuliaji: Haijulikani. Tafadhali fika haraka!",
+  "source": "whatsapp_simulator",
+  "received_at": "2025-12-02T14:35:05.372482",
+  "processed_at": "2025-12-03T01:03:05.378097",
+  "status": "processed",
+  "validation": {
+    "status": "incomplete",
+    "overall_completeness": 0.6,
+    "entities": {
+      "who": [],
+      "what": [
+        "Bomu limepatikana katika eneo la Kariakoo, Dar es Sala",
+        "Bomu limepatikana katika eneo la Kariakoo, Dar es Salaam"
+      ],
+      "where": [
+        "Dar es Salaam",
+        "la Kariakoo"
+      ],
+      "when": []
+    },
+    "field_scores": [
+      {
+        "field_name": "who",
+        "score": 0.0,
+        "is_present": false,
+        "extracted_value": null,
+        "confidence": 0.0
+      },
+      {
+        "field_name": "what",
+        "score": 1.0,
+        "is_present": true,
+        "extracted_value": "Bomu limepatikana katika eneo la Kariakoo, Dar es Sala, Bomu limepatikana katika eneo la Kariakoo, Dar es Salaam",
+        "confidence": 1.0
+      },
+      {
+        "field_name": "where",
+        "score": 1.0,
+        "is_present": true,
+        "extracted_value": "Dar es Salaam, la Kariakoo",
+        "confidence": 1.0
+      },
+      {
+        "field_name": "when",
+        "score": 0.0,
+        "is_present": false,
+        "extracted_value": null,
+        "confidence": 0.0
+      }
+    ],
+    "missing_fields": [
+      "who",
+      "when"
+    ],
+    "prompts": [
+      "Tafadhali toa taarifa za watu waliohusika (Nani?)",
+      "Tafadhali toa wakati au tarehe (Lini?)"
+    ],
+    "timestamp": "2025-12-03T01:03:05.374853"
+  },
+  "escalation": {
+    "severity": "Critical",
+    "priority_score": 0.99,
+    "escalation_window_minutes": 2,
+    "urgency_keywords_found": [
+      "bomu",
+      "haraka"
+    ],
+    "classification_confidence": 0.95,
+    "requires_immediate_alert": true,
+    "timestamp": "2025-12-03T01:03:05.377449"
+  },
+  "metadata": {
+    "simulated_severity": "critical",
+    "simulated_completeness": "incomplete",
+    "language": "sw"
+  },
+  "run_number": 5,
+  "report_number_in_run": 2,
+  "log_file": "agents_005.log"
+}

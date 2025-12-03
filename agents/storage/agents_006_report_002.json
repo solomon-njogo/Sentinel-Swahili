@@ -1,0 +1,84 @@
+{
+  "report_id": "RPT-006-54678D26",
+  "raw_message": "Kuna shughuli za kushuku katika eneo la Kimara, Dar es Salaam. Watu wameonekana wakikusanya taarifa kuhusu eneo. Jina: Ahmed Hassan. Tarehe: jana saa 4:00 jioni.",
+  "source": "whatsapp_simulator",
+  "received_at": "2025-12-02T04:31:04.139806",
+  "processed_at": "2025-12-03T01:13:04.148103",
+  "status": "processed",
+  "validation": {
+    "status": "complete",
+    "overall_completeness": 1.0,
+    "entities": {
+      "who": [
+        "Ahmed Hassan"
+      ],
+      "what": [
+        "Kuna shughuli za kushuku katika eneo la Kimara, Dar es Salaam. Watu wameon",
+        "Kuna shughuli za kushuku katika eneo la Kimara, Dar es Salaam"
+      ],
+      "where": [
+        "Dar es Salaam",
+        "la Kimara"
+      ],
+      "when": [
+        "jana",
+        "jioni",
+        "4:00 jioni",
+        "4:00 jioni",
+        "jana saa 4:00 jioni"
+      ]
+    },
+    "field_scores": [
+      {
+        "field_name": "who",
+        "score": 1.0,
+        "is_present": true,
+        "extracted_value": "Ahmed Hassan",
+        "confidence": 1.0
+      },
+      {
+        "field_name": "what",
+        "score": 1.0,
+        "is_present": true,
+        "extracted_value": "Kuna shughuli za kushuku katika eneo la Kimara, Dar es Salaam. Watu wameon, Kuna shughuli za kushuku katika eneo la Kimara, Dar es Salaam",
+        "confidence": 1.0
+      },
+      {
+        "field_name": "where",
+        "score": 1.0,
+        "is_present": true,
+        "extracted_value": "Dar es Salaam, la Kimara",
+        "confidence": 1.0
+      },
+      {
+        "field_name": "when",
+        "score": 1.0,
+        "is_present": true,
+        "extracted_value": "jana, jioni, 4:00 jioni",
+        "confidence": 1.0
+      }
+    ],
+    "missing_fields": [],
+    "prompts": [],
+    "timestamp": "2025-12-03T01:13:04.144533"
+  },
+  "escalation": {
+    "severity": "Medium",
+    "priority_score": 0.37,
+    "escalation_window_minutes": 1440,
+    "urgency_keywords_found": [
+      "shughuli za kushuku"
+    ],
+    "classification_confidence": 0.7,
+    "requires_immediate_alert": false,
+    "timestamp": "2025-12-03T01:13:04.147509"
+  },
+  "metadata": {
+    "simulated_severity": "medium",
+    "simulated_completeness": "complete",
+    "language": "sw"
+  },
+  "run_number": 6,
+  "report_number_in_run": 2,
+  "log_file": "agents_006.log"
+}

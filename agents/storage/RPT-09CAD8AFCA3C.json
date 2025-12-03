@@ -1,0 +1,90 @@
+{
+  "report_id": "RPT-09CAD8AFCA3C",
+  "raw_message": "Kuna mwanaume akona bunduki hapa\n\nDharura! Kuna shambulio la risasi katika Soko la Mwenge, Dar es Salaam. \nWatu wengi wamejeruhiwa. Tafadhali fika haraka. \nTarehe: leo saa 3:00 jioni. \nWashambuliaji: Watu wawili wamevaa nguo nyeusi.",
+  "source": "whatsapp_twilio",
+  "received_at": "2025-12-03T03:39:30.386783",
+  "processed_at": "2025-12-03T03:40:42.361220",
+  "status": "updated",
+  "validation": {
+    "status": "complete",
+    "overall_completeness": 1.0,
+    "entities": {
+      "who": [
+        "Watu wawili wamevaa nguo nyeusi",
+        "wawili",
+        "wengi",
+        "Watu wengi wamejeruhiwa",
+        "Watu wengi"
+      ],
+      "what": [
+        "Kuna mwanaume akona bunduki hapa Dharura! Kuna shambulio la risasi katika Soko la Mwenge,",
+        "Kuna mwanaume akona bunduki hapa Dharura! Kuna shambulio la risasi katika Soko la Mwenge, Dar es Salaam.",
+        "me akona bunduki hapa Dharura! Kuna shambulio la risasi katika Soko la Mwenge, Dar es Salaam. Watu wengi",
+        "Kuna mwanaume akona bunduki hapa Dharura! Kuna shambulio la risasi katika So",
+        "Kuna shambulio la risasi katika Soko la Mwenge, Dar es Salaam"
+      ],
+      "where": [
+        "Dar es Salaam",
+        "Soko la Mwenge",
+        "Mwenge"
+      ],
+      "when": [
+        "leo",
+        "jioni",
+        "3:00 jioni",
+        "3:00 jioni",
+        "leo saa 3:00 jioni"
+      ]
+    },
+    "field_scores": [
+      {
+        "field_name": "who",
+        "score": 1.0,
+        "is_present": true,
+        "extracted_value": "Watu wawili wamevaa nguo nyeusi, wawili, wengi",
+        "confidence": 1.0
+      },
+      {
+        "field_name": "what",
+        "score": 1.0,
+        "is_present": true,
+        "extracted_value": "Kuna mwanaume akona bunduki hapa Dharura! Kuna shambulio la risasi katika Soko la Mwenge,, Kuna mwanaume akona bunduki hapa Dharura! Kuna shambulio la risasi katika Soko la Mwenge, Dar es Salaam., me akona bunduki hapa Dharura! Kuna shambulio la risasi katika Soko la Mwenge, Dar es Salaam. Watu wengi",
+        "confidence": 1.0
+      },
+      {
+        "field_name": "where",
+        "score": 1.0,
+        "is_present": true,
+        "extracted_value": "Dar es Salaam, Soko la Mwenge, Mwenge",
+        "confidence": 1.0
+      },
+      {
+        "field_name": "when",
+        "score": 1.0,
+        "is_present": true,
+        "extracted_value": "leo, jioni, 3:00 jioni",
+        "confidence": 1.0
+      }
+    ],
+    "missing_fields": [],
+    "prompts": [],
+    "timestamp": "2025-12-03T03:40:42.354947"
+  },
+  "escalation": {
+    "severity": "Critical",
+    "priority_score": 1.0,
+    "escalation_window_minutes": 2,
+    "urgency_keywords_found": [
+      "shambulio",
+      "risasi",
+      "dharura",
+      "haraka"
+    ],
+    "classification_confidence": 0.95,
+    "requires_immediate_alert": true,
+    "timestamp": "2025-12-03T03:40:42.360214"
+  },
+  "metadata": {
+    "language": "sw"
+  }
+}

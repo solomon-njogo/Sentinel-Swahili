@@ -39,3 +39,20 @@ gensim>=4.3.0  # Topic modeling (LDA)
 # Optional dependencies for future enhancements:
 # pandas>=1.5.0  # For advanced data manipulation (if needed)
 
+# Multi-Agent System Dependencies
+spacy>=3.7.0  # Named Entity Recognition for Validator Agent
+sentence-transformers>=2.2.0  # Semantic similarity scoring for validation
+openai>=1.0.0  # OpenRouter LLM API client for severity classification
+
+# Dashboard Dependencies
+streamlit>=1.28.0  # Streamlit for interactive dashboard
+streamlit-folium>=0.15.0  # Streamlit integration for Folium maps
+folium>=0.14.0  # Interactive maps for visualization
+pandas>=1.5.0  # Data manipulation for dashboard tables
+plotly>=5.14.0  # Interactive charts and visualizations
+
+# WhatsApp Bot Dependencies
+twilio>=8.0.0  # Twilio API for WhatsApp integration
+flask>=2.3.0  # Flask web framework for webhook server
+python-dotenv>=1.0.0  # Environment variable management
+

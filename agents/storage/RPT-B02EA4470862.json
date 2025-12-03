@@ -1,0 +1,74 @@
+{
+  "report_id": "RPT-B02EA4470862",
+  "raw_message": "Kuna mwanaume akona bunduki hapa\n\nNi mwanaume Mkubwa. Ako hapo Nairobi. \nLeo usiku",
+  "source": "whatsapp_twilio",
+  "received_at": "2025-12-03T03:41:20.496525",
+  "processed_at": "2025-12-03T03:42:01.257633",
+  "status": "updated",
+  "validation": {
+    "status": "complete",
+    "overall_completeness": 0.75,
+    "entities": {
+      "who": [],
+      "what": [
+        "Kuna mwanaume akona bunduki hapa Ni mwanaume Mkubwa. Ako hapo Nairobi. Leo"
+      ],
+      "where": [
+        "Nairobi"
+      ],
+      "when": [
+        "Leo",
+        "usiku"
+      ]
+    },
+    "field_scores": [
+      {
+        "field_name": "who",
+        "score": 0.0,
+        "is_present": false,
+        "extracted_value": null,
+        "confidence": 0.0
+      },
+      {
+        "field_name": "what",
+        "score": 1.0,
+        "is_present": true,
+        "extracted_value": "Kuna mwanaume akona bunduki hapa Ni mwanaume Mkubwa. Ako hapo Nairobi. Leo",
+        "confidence": 1.0
+      },
+      {
+        "field_name": "where",
+        "score": 1.0,
+        "is_present": true,
+        "extracted_value": "Nairobi",
+        "confidence": 1.0
+      },
+      {
+        "field_name": "when",
+        "score": 1.0,
+        "is_present": true,
+        "extracted_value": "Leo, usiku",
+        "confidence": 1.0
+      }
+    ],
+    "missing_fields": [
+      "who"
+    ],
+    "prompts": [
+      "Tafadhali toa taarifa za watu waliohusika (Nani?)"
+    ],
+    "timestamp": "2025-12-03T03:42:01.257633"
+  },
+  "escalation": {
+    "severity": "Low",
+    "priority_score": 0.125,
+    "escalation_window_minutes": 10080,
+    "urgency_keywords_found": [],
+    "classification_confidence": 0.5,
+    "requires_immediate_alert": false,
+    "timestamp": "2025-12-03T03:42:01.257633"
+  },
+  "metadata": {
+    "language": "sw"
+  }
+}

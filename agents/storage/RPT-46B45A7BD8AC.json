@@ -1,0 +1,100 @@
+{
+  "report_id": "RPT-46B45A7BD8AC",
+  "raw_message": "Dharura! Kuna shambulio la risasi katika Soko la Mwenge, Dar es Salaam. \nWatu wengi wamejeruhiwa. Tafadhali fika haraka. \nTarehe: leo saa 3:00 jioni. \nWashambuliaji: Watu wawili wamevaa nguo nyeusi.\n\nNini: Dharura! Kuna shambulio la risasi katika Soko la Mwenge,, Dharura! Kuna shambulio la risasi katika Soko la Mwenge, Dar es Salaam.\nWapi: Dar es Salaam, Soko la Mwenge\nNani: Watu wawili wamevaa nguo nyeusi, wawili\nLini: leo, jioni",
+  "source": "whatsapp_twilio",
+  "received_at": "2025-12-03T04:27:41.662515",
+  "processed_at": "2025-12-03T04:27:41.686541",
+  "status": "updated",
+  "validation": {
+    "status": "complete",
+    "overall_completeness": 1.0,
+    "entities": {
+      "who": [
+        "Mwenge\nNani",
+        "Watu wawili wamevaa nguo nyeusi",
+        "wawili",
+        "wengi",
+        "Watu wengi wamejeruhiwa",
+        "Watu wengi"
+      ],
+      "what": [
+        "Dharura! Kuna shambulio la risasi katika Soko la Mwenge,",
+        "Dharura! Kuna shambulio la risasi katika Soko la Mwenge, Dar es Salaam.",
+        "Dharura! Kuna shambulio la risasi katika Soko la Mwenge, Dar es Salaam. Watu wengi",
+        "mbuliaji: Watu wawili wamevaa nguo nyeusi. Nini: Dharura! Kuna shambulio la risasi katika Soko la Mwenge,,",
+        "wawili wamevaa nguo nyeusi. Nini: Dharura! Kuna shambulio la risasi katika Soko la Mwenge,, Dharura! Kuna s"
+      ],
+      "where": [
+        "Dar es Salaam",
+        "Soko la Mwenge",
+        "Mwenge",
+        "Mwenge\nNani"
+      ],
+      "when": [
+        "leo",
+        "jioni",
+        "3:00 jioni",
+        "3:00 jioni",
+        "leo saa 3:00 jioni"
+      ]
+    },
+    "field_scores": [
+      {
+        "field_name": "who",
+        "score": 1.0,
+        "is_present": true,
+        "extracted_value": "Mwenge\nNani, Watu wawili wamevaa nguo nyeusi, wawili",
+        "confidence": 1.0
+      },
+      {
+        "field_name": "what",
+        "score": 1.0,
+        "is_present": true,
+        "extracted_value": "Dharura! Kuna shambulio la risasi katika Soko la Mwenge,, Dharura! Kuna shambulio la risasi katika Soko la Mwenge, Dar es Salaam., Dharura! Kuna shambulio la risasi katika Soko la Mwenge, Dar es Salaam. Watu wengi",
+        "confidence": 1.0
+      },
+      {
+        "field_name": "where",
+        "score": 1.0,
+        "is_present": true,
+        "extracted_value": "Dar es Salaam, Soko la Mwenge, Mwenge",
+        "confidence": 1.0
+      },
+      {
+        "field_name": "when",
+        "score": 1.0,
+        "is_present": true,
+        "extracted_value": "leo, jioni, 3:00 jioni",
+        "confidence": 1.0
+      }
+    ],
+    "missing_fields": [],
+    "prompts": [],
+    "timestamp": "2025-12-03T04:27:41.684250"
+  },
+  "escalation": {
+    "severity": "Critical",
+    "priority_score": 1.0,
+    "escalation_window_minutes": 2,
+    "urgency_keywords_found": [
+      "shambulio",
+      "risasi",
+      "dharura",
+      "haraka"
+    ],
+    "classification_confidence": 0.95,
+    "requires_immediate_alert": true,
+    "timestamp": "2025-12-03T04:27:41.685981"
+  },
+  "metadata": {
+    "language": "sw"
+  },
+  "collected_where": "Dar es Salaam, Soko la Mwenge",
+  "collected_what": "Dharura! Kuna shambulio la risasi katika Soko la Mwenge,, Dharura! Kuna shambulio la risasi katika Soko la Mwenge, Dar es Salaam.",
+  "collected_who": "Watu wawili wamevaa nguo nyeusi, wawili",
+  "collected_when": "leo, jioni",
+  "conversation_flow": {
+    "completed_via_flow": true,
+    "collected_at": "2025-12-03T04:27:41.689286"
+  }
+}

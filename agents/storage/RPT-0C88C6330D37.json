@@ -1,0 +1,72 @@
+{
+  "report_id": "RPT-0C88C6330D37",
+  "raw_message": "Kuna mtu akona bunduki hapa\n\nHuyo mtu anatembea Nairobi Leo usiku",
+  "source": "whatsapp_twilio",
+  "received_at": "2025-12-03T03:36:49.015881",
+  "processed_at": "2025-12-03T03:37:35.438125",
+  "status": "updated",
+  "validation": {
+    "status": "complete",
+    "overall_completeness": 1.0,
+    "entities": {
+      "who": [
+        "Nairobi Leo"
+      ],
+      "what": [
+        "Kuna mtu akona bunduki hapa Huyo mtu anatembea Nairobi Leo usiku"
+      ],
+      "where": [
+        "Nairobi"
+      ],
+      "when": [
+        "Leo",
+        "usiku"
+      ]
+    },
+    "field_scores": [
+      {
+        "field_name": "who",
+        "score": 1.0,
+        "is_present": true,
+        "extracted_value": "Nairobi Leo",
+        "confidence": 1.0
+      },
+      {
+        "field_name": "what",
+        "score": 1.0,
+        "is_present": true,
+        "extracted_value": "Kuna mtu akona bunduki hapa Huyo mtu anatembea Nairobi Leo usiku",
+        "confidence": 1.0
+      },
+      {
+        "field_name": "where",
+        "score": 1.0,
+        "is_present": true,
+        "extracted_value": "Nairobi",
+        "confidence": 1.0
+      },
+      {
+        "field_name": "when",
+        "score": 1.0,
+        "is_present": true,
+        "extracted_value": "Leo, usiku",
+        "confidence": 1.0
+      }
+    ],
+    "missing_fields": [],
+    "prompts": [],
+    "timestamp": "2025-12-03T03:37:35.438125"
+  },
+  "escalation": {
+    "severity": "Low",
+    "priority_score": 0.125,
+    "escalation_window_minutes": 10080,
+    "urgency_keywords_found": [],
+    "classification_confidence": 0.5,
+    "requires_immediate_alert": false,
+    "timestamp": "2025-12-03T03:37:35.438125"
+  },
+  "metadata": {
+    "language": "sw"
+  }
+}
