@@ -8,6 +8,7 @@ import type { Alert, AgentReport } from '../types';
 import { alertsApi, reportsApi } from '../services/api';
 import { numericToSeverity, getSeverityColor } from '../utils/severity';
 import { SingleAlertMap } from '../components/SingleAlertMap';
+import { StructuredDataView } from '../components/StructuredDataView';
 import './ThreatDetailPage.css';
 
 export const ThreatDetailPage: React.FC = () => {
@@ -146,38 +147,31 @@ export const ThreatDetailPage: React.FC = () => {
               {agentReport.validation && (
                 <section className="detail-section">
                   <h2>✅ Validation Results</h2>
-                  <div className="json-section">
-                    <pre>{JSON.stringify(agentReport.validation, null, 2)}</pre>
-                  </div>
+                  <StructuredDataView data={agentReport.validation} />
                 </section>
               )}
               
               {agentReport.escalation && (
                 <section className="detail-section">
                   <h2>🚨 Escalation Results</h2>
-                  <div className="json-section">
-                    <pre>{JSON.stringify(agentReport.escalation, null, 2)}</pre>
-                  </div>
+                  <StructuredDataView data={agentReport.escalation} />
                 </section>
               )}
             </>
           )}
           
           {/* Classification Data */}
-          {(alert.validation || alert.escalation) && (
+          {(alert.validation || alert.escalation || alert.classification) && (
             <section className="detail-section">
               <h2>🔍 Classification Data</h2>
               {alert.validation && (
-                <div className="json-section">
-                  <h3>Validation</h3>
-                  <pre>{JSON.stringify(alert.validation, null, 2)}</pre>
-                </div>
+                <StructuredDataView data={alert.validation} title="Validation" />
               )}
               {alert.escalation && (
-                <div className="json-section">
-                  <h3>Escalation</h3>
-                  <pre>{JSON.stringify(alert.escalation, null, 2)}</pre>
-                </div>
+                <StructuredDataView data={alert.escalation} title="Escalation" />
+              )}
+              {alert.classification && (
+                <StructuredDataView data={alert.classification} title="Classification" />
               )}
             </section>
           )}
