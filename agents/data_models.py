@@ -24,6 +24,16 @@ class ValidationStatus(str, Enum):
     FAILED = "failed"
 
 
+class ConversationState(str, Enum):
+    """Conversation flow state"""
+    INITIAL = "initial"
+    ASKING_WHERE = "asking_where"
+    ASKING_WHAT = "asking_what"
+    ASKING_WHO = "asking_who"
+    ASKING_WHEN = "asking_when"
+    COMPLETE = "complete"
+
+
 @dataclass
 class ExtractedEntities:
     """Extracted named entities from a threat report"""
@@ -123,10 +133,16 @@ class ProcessedReport:
     status: str = "processed"
     processed_at: datetime = field(default_factory=datetime.now)
     metadata: Dict[str, Any] = field(default_factory=dict)
+    # Structured collected data from conversation flow
+    collected_where: Optional[str] = None
+    collected_what: Optional[str] = None
+    collected_who: Optional[str] = None
+    collected_when: Optional[str] = None
+    conversation_flow: Dict[str, Any] = field(default_factory=dict)
     
     def to_dict(self) -> Dict[str, Any]:
         """Convert to dictionary for JSON serialization"""
-        return {
+        result = {
             'report_id': self.report_id,
             'raw_message': self.raw_message,
             'source': self.source,
@@ -137,4 +153,16 @@ class ProcessedReport:
             'escalation': self.escalation.to_dict(),
             'metadata': self.metadata
         }
+        # Add structured collected data if present
+        if self.collected_where is not None:
+            result['collected_where'] = self.collected_where
+        if self.collected_what is not None:
+            result['collected_what'] = self.collected_what
+        if self.collected_who is not None:
+            result['collected_who'] = self.collected_who
+        if self.collected_when is not None:
+            result['collected_when'] = self.collected_when
+        if self.conversation_flow:
+            result['conversation_flow'] = self.conversation_flow
+        return result
 

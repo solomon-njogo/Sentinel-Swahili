@@ -141,3 +141,64 @@ TWILIO_CONFIG = {
     "port": int(os.getenv("PORT", "5000")),
 }
 
+# Conversation flow configuration
+CONVERSATION_FLOW_CONFIG = {
+    "session_timeout_seconds": 720,  # 12 minutes
+    "question_order": ["where", "what", "who", "when"],
+    "skip_keywords": ["skip", "soma", "ruhusa", "haijalishi", "si muhimu"],
+    "vague_answer_threshold": 5,  # Minimum characters for non-vague answer
+}
+
+# Flow message templates (Swahili)
+FLOW_MESSAGES = {
+    "initial_greeting": (
+        "Asante kwa kuripoti hii. Nitauliza maswali machache tu "
+        "ili kuelewa hali ya hali zaidi."
+    ),
+    "where_question": (
+        "Wapi hii inatokea? Eneo, jina la jengo, barabara, au eneo la jumla linatosha."
+    ),
+    "where_followup": (
+        "Asante. Unaweza kutaja alama ya karibu au eneo? "
+        "Unaweza pia kutuma eneo la moja kwa moja au pini kwenye ramani. "
+        "Ikiwa hujui, jibu SKIP."
+    ),
+    "what_question": (
+        "Ni nini hasa kinachotokea? "
+        "(Mfano: mtu mwenye shaka, kitu cha hatari, tishio la mtandaoni, nk)"
+    ),
+    "what_followup": (
+        "Nimeelewa. Unaweza kueleza kwa maneno machache zaidi? "
+        "Ikiwa hujui, jibu SKIP."
+    ),
+    "who_question": (
+        "Je, unajua nani anahusika? "
+        "Jina, maelezo, au 'hajulikani' ni sawa."
+    ),
+    "who_followup": (
+        "Maelezo yoyote madogo yanasaidia - mavazi, muonekano, au ukubwa wa kikundi. "
+        "Au jibu SKIP."
+    ),
+    "when_question": (
+        "Lini hii ilitokea au itatokea? "
+        "(Wakati, tarehe, au 'sasa' ni sawa. Jibu SKIP ikiwa hujui.)"
+    ),
+    "when_followup": (
+        "Unaweza kutaja wakati au tarehe maalum? "
+        "Au jibu SKIP ikiwa hujui."
+    ),
+    "reassurance": (
+        "Asante. Unaendelea vizuri. Swali moja tu zaidi..."
+    ),
+    "completion": (
+        "Asante sana! Taarifa yako imekusanywa kikamilifu. "
+        "Tutachambua na kuchukua hatua inayofaa."
+    ),
+}
+
+# WhatsApp button configuration
+BUTTON_CONFIG = {
+    "skip_button_label": "SKIP",
+    "skip_button_id": "skip",
+}
+

@@ -5,7 +5,7 @@ Manages sessions by phone number, handles timeouts, and persists to file.
 
 import json
 from pathlib import Path
-from typing import Optional, Dict
+from typing import Optional, Dict, Any
 from datetime import datetime, timedelta
 from agents.config import STORAGE_CONFIG
 from src.utils.logger import get_logger
@@ -31,11 +31,11 @@ class ConversationManager:
         else:
             self.sessions_file = Path(sessions_file)
         
-        # In-memory sessions: {phone_number: {report_id, last_updated, status}}
+        # In-memory sessions: {phone_number: {report_id, last_updated, status, flow_state, collected_data}}
         self.sessions: Dict[str, Dict] = {}
         
-        # Session timeout: 1 hour
-        self.timeout_seconds = 3600
+        # Session timeout: 12 minutes (720 seconds)
+        self.timeout_seconds = 720
         
         # Load existing sessions from file
         self.load_sessions()
@@ -140,34 +140,57 @@ class ConversationManager:
             self.save_sessions()
             return None
     
-    def create_session(self, phone_number: str, report_id: str) -> None:
+    def create_session(
+        self, 
+        phone_number: str, 
+        report_id: str,
+        flow_state: Optional[Dict[str, Any]] = None,
+        collected_data: Optional[Dict[str, Optional[str]]] = None
+    ) -> None:
         """
         Create a new session for a phone number.
         
         Args:
             phone_number: Phone number
             report_id: Report ID for this session
+            flow_state: Optional conversation flow state
+            collected_data: Optional collected data dictionary
         """
         now = datetime.now().isoformat()
         self.sessions[phone_number] = {
             "report_id": report_id,
             "last_updated": now,
-            "status": "incomplete"
+            "status": "incomplete",
+            "flow_state": flow_state or {},
+            "collected_data": collected_data or {
+                "where": None,
+                "what": None,
+                "who": None,
+                "when": None
+            }
         }
         self.save_sessions()
         self.logger.info(f"Created session for {phone_number} with report {report_id}")
     
-    def update_session(self, phone_number: str, report_id: Optional[str] = None) -> None:
+    def update_session(
+        self, 
+        phone_number: str, 
+        report_id: Optional[str] = None,
+        flow_state: Optional[Dict[str, Any]] = None,
+        collected_data: Optional[Dict[str, Optional[str]]] = None
+    ) -> None:
         """
-        Update session timestamp (and optionally report_id).
+        Update session timestamp and optionally flow state/collected data.
         
         Args:
             phone_number: Phone number
             report_id: Optional new report ID (if updating to different report)
+            flow_state: Optional conversation flow state to update
+            collected_data: Optional collected data to update
         """
         if phone_number not in self.sessions:
             if report_id:
-                self.create_session(phone_number, report_id)
+                self.create_session(phone_number, report_id, flow_state, collected_data)
             return
         
         now = datetime.now().isoformat()
@@ -175,6 +198,15 @@ class ConversationManager:
         
         if report_id:
             self.sessions[phone_number]["report_id"] = report_id
+        
+        if flow_state is not None:
+            self.sessions[phone_number]["flow_state"] = flow_state
+        
+        if collected_data is not None:
+            # Merge collected data
+            current_data = self.sessions[phone_number].get("collected_data", {})
+            current_data.update(collected_data)
+            self.sessions[phone_number]["collected_data"] = current_data
         
         self.save_sessions()
         self.logger.debug(f"Updated session for {phone_number}")

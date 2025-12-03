@@ -22,6 +22,7 @@ from agents.whatsapp_simulator import WhatsAppSimulator
 from agents.config import LANGUAGE_CONFIG
 from src.utils.logger import setup_logging_with_increment, get_logger
 from datetime import datetime
+from typing import Optional, Dict
 import logging
 
 
@@ -189,7 +190,12 @@ class ThreatProcessingPipeline:
             metadata=report_dict.get("metadata", {})
         )
     
-    def update_report(self, existing_report_id: str, new_message: str) -> ProcessedReport:
+    def update_report(
+        self, 
+        existing_report_id: str, 
+        new_message: str,
+        collected_data: Optional[Dict[str, Optional[str]]] = None
+    ) -> ProcessedReport:
         """
         Update an existing report with additional information.
         Merges new message with existing message and re-processes.
@@ -197,6 +203,7 @@ class ThreatProcessingPipeline:
         Args:
             existing_report_id: ID of the existing report to update
             new_message: New message text to merge with existing report
+            collected_data: Optional structured collected data (where, what, who, when)
             
         Returns:
             Updated ProcessedReport
@@ -241,7 +248,7 @@ class ThreatProcessingPipeline:
         )
         updated_report.escalation_result = escalation_result
         
-        # Create updated ProcessedReport
+        # Create updated ProcessedReport with structured data if provided
         updated_processed_report = ProcessedReport(
             report_id=existing_report.report_id,
             raw_message=merged_message,
@@ -251,7 +258,11 @@ class ThreatProcessingPipeline:
             escalation=escalation_result,
             status="updated",
             processed_at=datetime.now(),
-            metadata=existing_report.metadata
+            metadata=existing_report.metadata,
+            collected_where=collected_data.get("where") if collected_data and collected_data.get("where") else report_dict.get('collected_where') if report_dict else None,
+            collected_what=collected_data.get("what") if collected_data and collected_data.get("what") else report_dict.get('collected_what') if report_dict else None,
+            collected_who=collected_data.get("who") if collected_data and collected_data.get("who") else report_dict.get('collected_who') if report_dict else None,
+            collected_when=collected_data.get("when") if collected_data and collected_data.get("when") else report_dict.get('collected_when') if report_dict else None
         )
         
         # Save updated report (overwrites existing file)

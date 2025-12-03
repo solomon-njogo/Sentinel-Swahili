@@ -6,7 +6,7 @@ Processes messages through the multi-agent pipeline and sends automated response
 import sys
 import os
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Dict
 from flask import Flask, request, Response, jsonify
 from twilio.rest import Client
 from twilio.twiml.messaging_response import MessagingResponse
@@ -17,9 +17,11 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from agents.main import ThreatProcessingPipeline
 from agents.conversation_manager import ConversationManager
-from agents.config import TWILIO_CONFIG, FIELD_PROMPTS, LANGUAGE_CONFIG
+from agents.conversation_flow_manager import ConversationFlowManager, ConversationState
+from agents.config import TWILIO_CONFIG, FIELD_PROMPTS, LANGUAGE_CONFIG, FLOW_MESSAGES, BUTTON_CONFIG
 from agents.data_models import ValidationStatus, SeverityLevel
 from src.utils.logger import setup_logging_with_increment, get_logger
+from datetime import datetime
 import logging
 
 # Load environment variables
@@ -41,6 +43,9 @@ pipeline = None
 
 # Initialize conversation manager
 conversation_manager = None
+
+# Initialize conversation flow manager
+flow_manager = None
 
 # Response message templates in Swahili with structured formatting
 RESPONSE_MESSAGES = {
@@ -183,13 +188,14 @@ def format_missing_fields(missing_fields: list) -> str:
     return "\n".join(formatted)
 
 
-def send_whatsapp_message(to: str, message: str) -> bool:
+def send_whatsapp_message(to: str, message: str, with_skip_button: bool = False) -> bool:
     """
     Send a WhatsApp message via Twilio.
     
     Args:
         to: Recipient phone number (format: whatsapp:+1234567890)
         message: Message text to send
+        with_skip_button: Whether to add a SKIP button
         
     Returns:
         True if successful, False otherwise
@@ -215,6 +221,99 @@ def send_whatsapp_message(to: str, message: str) -> bool:
         logger = get_logger(__name__)
         logger.error(f"Error sending WhatsApp message: {e}", exc_info=True)
         return False
+
+
+def create_message_with_button(message: str, button_label: str = "SKIP") -> str:
+    """
+    Create a message with WhatsApp interactive button.
+    Note: Twilio WhatsApp buttons require specific formatting.
+    For now, we'll add the button option as text in the message.
+    
+    Args:
+        message: Main message text
+        button_label: Button label (default: "SKIP")
+        
+    Returns:
+        Message with button instruction
+    """
+    return f"{message}\n\n(Jibu '{button_label}' ikiwa hujui au unataka kuruka)"
+
+
+def _generate_completion_response(collected_data: Dict[str, Optional[str]], report_id: str) -> str:
+    """
+    Generate completion response when all fields are collected.
+    
+    Args:
+        collected_data: Dictionary with collected where, what, who, when
+        report_id: Report ID
+        
+    Returns:
+        Completion message
+    """
+    completion_msg = FLOW_MESSAGES.get("completion", "Asante sana!")
+    return f"{completion_msg}\n\n🆔 Nambari ya Taarifa: {report_id}"
+
+
+def _create_final_report(
+    collected_data: Dict[str, Optional[str]],
+    report_id: str,
+    sender_number: str
+) -> None:
+    """
+    Create final comprehensive report from collected data.
+    
+    Args:
+        collected_data: Dictionary with collected where, what, who, when
+        report_id: Report ID
+        sender_number: Sender phone number
+    """
+    logger = get_logger(__name__)
+    try:
+        # Build comprehensive message from collected data
+        parts = []
+        if collected_data.get("what"):
+            parts.append(f"Nini: {collected_data['what']}")
+        if collected_data.get("where"):
+            parts.append(f"Wapi: {collected_data['where']}")
+        if collected_data.get("who"):
+            parts.append(f"Nani: {collected_data['who']}")
+        if collected_data.get("when"):
+            parts.append(f"Lini: {collected_data['when']}")
+        
+        comprehensive_message = "\n".join(parts)
+        
+        # Load existing report if it exists
+        existing_report = pipeline.storage.load_report(report_id)
+        if existing_report:
+            # Update with comprehensive data
+            processed_report = pipeline.update_report(
+                existing_report_id=report_id,
+                new_message=comprehensive_message
+            )
+        else:
+            # Create new report
+            processed_report = pipeline.process_message(
+                message=comprehensive_message,
+                source="whatsapp_twilio",
+                report_id=report_id
+            )
+        
+        # Update report with structured collected data
+        processed_report.collected_where = collected_data.get("where")
+        processed_report.collected_what = collected_data.get("what")
+        processed_report.collected_who = collected_data.get("who")
+        processed_report.collected_when = collected_data.get("when")
+        processed_report.conversation_flow = {
+            "completed_via_flow": True,
+            "collected_at": datetime.now().isoformat()
+        }
+        
+        # Save updated report
+        pipeline.storage.save_report(processed_report)
+        logger.info(f"Created final comprehensive report {report_id}")
+        
+    except Exception as e:
+        logger.error(f"Error creating final report: {e}", exc_info=True)
 
 
 def generate_response(processed_report, is_update: bool = False) -> str:
@@ -348,6 +447,7 @@ def webhook():
     Returns:
         TwiML response
     """
+    global flow_manager
     logger = get_logger(__name__)
     
     # Handle GET requests (Twilio webhook verification)
@@ -377,6 +477,13 @@ def webhook():
         resp.message(get_response_message("error_generic"))
         return Response(str(resp), mimetype="text/xml")
     
+    # Check if flow manager is initialized
+    if flow_manager is None:
+        logger.error("Flow manager not initialized")
+        resp = MessagingResponse()
+        resp.message(get_response_message("error_generic"))
+        return Response(str(resp), mimetype="text/xml")
+    
     try:
         # Get message data from Twilio webhook
         incoming_message = request.values.get("Body", "").strip()
@@ -397,50 +504,126 @@ def webhook():
         
         # Check for active session
         active_session = conversation_manager.get_active_session(sender_number)
-        is_update = False
         
-        # Process message through pipeline
+        # Handle conversation flow
         try:
             if active_session:
-                # Update existing report
-                existing_report_id = active_session.get("report_id")
-                logger.info(f"Active session found for {sender_number}, updating report {existing_report_id}")
+                # Existing session - continue conversation flow
+                flow_state = active_session.get("flow_state", {})
+                collected_data = active_session.get("collected_data", {
+                    "where": None,
+                    "what": None,
+                    "who": None,
+                    "when": None
+                })
+                current_state_str = flow_state.get("state", ConversationState.INITIAL.value)
+                current_state = ConversationState(current_state_str)
                 
-                processed_report = pipeline.update_report(
-                    existing_report_id=existing_report_id,
-                    new_message=incoming_message
+                logger.info(f"Continuing flow for {sender_number}, state: {current_state.value}")
+                
+                # Process response
+                flow_result = flow_manager.process_response(
+                    message=incoming_message,
+                    current_state=current_state,
+                    collected_data=collected_data
                 )
-                is_update = True
                 
-                # Update session timestamp
-                conversation_manager.update_session(sender_number, existing_report_id)
+                # Update session with new flow state
+                flow_state.update({
+                    "state": flow_result["state"],
+                    "missing_fields": flow_result["missing_fields"],
+                    "next_question_field": flow_result["next_question_field"]
+                })
+                
+                conversation_manager.update_session(
+                    phone_number=sender_number,
+                    flow_state=flow_state,
+                    collected_data=flow_result["collected_data"]
+                )
+                
+                # Generate response based on flow state
+                if flow_result["is_complete"]:
+                    # All fields collected - create final report
+                    response_message = _generate_completion_response(
+                        flow_result["collected_data"],
+                        active_session.get("report_id")
+                    )
+                    # Close session
+                    conversation_manager.close_session(sender_number)
+                elif flow_result.get("needs_followup"):
+                    # Vague answer - ask follow-up
+                    next_field = flow_result["next_question_field"]
+                    response_message = flow_manager.get_question_message(next_field, is_followup=True)
+                    response_message = create_message_with_button(response_message)
+                else:
+                    # Move to next question
+                    next_field = flow_result["next_question_field"]
+                    if next_field:
+                        # Add reassurance if not first question
+                        reassurance = flow_manager.get_reassurance_message()
+                        question = flow_manager.get_question_message(next_field)
+                        response_message = f"{reassurance}\n\n{question}"
+                        response_message = create_message_with_button(response_message)
+                    else:
+                        response_message = FLOW_MESSAGES.get("completion", "Asante!")
+                
+                        # Create final report if complete
+                if flow_result["is_complete"]:
+                    _create_final_report(
+                        flow_result["collected_data"],
+                        active_session.get("report_id"),
+                        sender_number
+                    )
+                
             else:
-                # Create new report
-                logger.info(f"No active session for {sender_number}, creating new report")
+                # New session - initialize flow
+                logger.info(f"New session for {sender_number}, initializing flow")
+                
+                # Initialize conversation flow
+                flow_state = flow_manager.initialize_flow(incoming_message)
+                
+                # Create initial report
+                report_id = pipeline.storage.generate_report_id()
                 processed_report = pipeline.process_message(
                     message=incoming_message,
-                    source="whatsapp_twilio"
+                    source="whatsapp_twilio",
+                    report_id=report_id
                 )
+                
+                # Create session with flow state
+                conversation_manager.create_session(
+                    phone_number=sender_number,
+                    report_id=report_id,
+                    flow_state=flow_state,
+                    collected_data=flow_state["collected_data"]
+                )
+                
+                # Generate response
+                if flow_state["is_urgent"]:
+                    # Urgent - acknowledge and still ask questions but faster
+                    urgency_msg = get_response_message("critical_acknowledgment") if flow_state["urgency_severity"] == "Critical" else get_response_message("high_acknowledgment")
+                    greeting = flow_manager.get_initial_greeting()
+                    response_message = f"{urgency_msg}\n\n{greeting}"
+                else:
+                    response_message = flow_manager.get_initial_greeting()
+                
+                # Ask first question if needed
+                next_field = flow_state.get("next_question_field")
+                if next_field:
+                    question = flow_manager.get_question_message(next_field)
+                    response_message = f"{response_message}\n\n{question}"
+                    response_message = create_message_with_button(response_message)
+                else:
+                    # All info provided in first message
+                    response_message = f"{response_message}\n\n{FLOW_MESSAGES.get('completion', 'Asante!')}"
+                    # Create final report immediately
+                    _create_final_report(
+                        flow_state["collected_data"],
+                        report_id,
+                        sender_number
+                    )
+                    conversation_manager.close_session(sender_number)
             
-            logger.info(
-                f"Processed report {processed_report.report_id}: "
-                f"Severity={processed_report.escalation.severity.value}, "
-                f"Completeness={processed_report.validation.overall_completeness:.2f}, "
-                f"IsUpdate={is_update}"
-            )
-            
-            # Manage session based on report completeness
-            if processed_report.validation.status == ValidationStatus.COMPLETE:
-                # Report is complete, close the session
-                conversation_manager.close_session(sender_number)
-                logger.info(f"Report {processed_report.report_id} is complete, session closed")
-            elif not active_session:
-                # Report is incomplete and no session exists, create new session
-                conversation_manager.create_session(sender_number, processed_report.report_id)
-                logger.info(f"Report {processed_report.report_id} is incomplete, session created")
-            
-            # Generate response message
-            response_message = generate_response(processed_report, is_update=is_update)
             logger.info(f"Generated response message: {response_message[:200]}...")
             
             # Return TwiML response (Twilio will send this message automatically)
@@ -532,7 +715,7 @@ def test_webhook():
 
 def main():
     """Initialize and run the webhook server."""
-    global pipeline, conversation_manager
+    global pipeline, conversation_manager, flow_manager
     
     # Setup logging
     log_file_path = setup_logging_with_increment(
@@ -571,6 +754,14 @@ def main():
         logger.info("Conversation manager initialized")
     except Exception as e:
         logger.error(f"Failed to initialize conversation manager: {e}", exc_info=True)
+        sys.exit(1)
+    
+    # Initialize conversation flow manager
+    try:
+        flow_manager = ConversationFlowManager()
+        logger.info("Conversation flow manager initialized")
+    except Exception as e:
+        logger.error(f"Failed to initialize flow manager: {e}", exc_info=True)
         sys.exit(1)
     
     # Get port from config
