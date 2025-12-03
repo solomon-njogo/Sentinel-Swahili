@@ -48,6 +48,20 @@ def load_llama_model_and_tokenizer(
     logger.info(f"Loading Llama 2 model: {model_name}")
     logger.info(f"Using 4-bit quantization: {use_4bit}")
     
+    # Check GPU availability and set device_map accordingly
+    if device_map == "auto":
+        if torch.cuda.is_available():
+            logger.info(f"GPU detected: {torch.cuda.get_device_name(0)}")
+            logger.info(f"GPU Memory: {torch.cuda.get_device_properties(0).total_memory / 1024**3:.2f} GB")
+            # Try GPU first, but allow CPU offloading if needed
+            device_map = "auto"  # Let it automatically handle GPU/CPU offloading
+            logger.info("Will attempt GPU loading with CPU offloading fallback if needed")
+        else:
+            device_map = "auto"
+            logger.warning("No GPU detected. Using CPU (will be slower).")
+    else:
+        logger.info(f"Using custom device_map: {device_map}")
+    
     # Authenticate with Hugging Face Hub
     try:
         login(new_session=False)
@@ -168,10 +182,13 @@ def load_llama_model_and_tokenizer(
             logger.info(f"Loading model from: {model_path}")
             for attempt in range(max_retries):
                 try:
+                    # Try GPU first, but allow CPU/disk offloading if GPU memory is insufficient
+                    load_device_map = device_map
+                    
                     model = AutoModelForCausalLM.from_pretrained(
                         model_path,
                         quantization_config=bnb_config,
-                        device_map=device_map,
+                        device_map=load_device_map,
                         trust_remote_code=False,
                         torch_dtype=torch.float16,
                         resume_download=True,
@@ -180,7 +197,22 @@ def load_llama_model_and_tokenizer(
                     break
                 except Exception as e:
                     error_str = str(e).lower()
-                    if attempt < max_retries - 1 and ("connection" in error_str or "incomplete" in error_str or "broken" in error_str or "read" in error_str):
+                    # Handle GPU offloading error - fall back to CPU immediately
+                    if ("dispatched on the cpu" in error_str or "dispatched on the disk" in error_str or "gpu ram" in error_str) and torch.cuda.is_available():
+                        if attempt < max_retries - 1:
+                            logger.warning("GPU memory insufficient for model. Falling back to CPU-only training...")
+                            logger.info("Training will proceed on CPU (slower but will work).")
+                            # Fall back to CPU-only and retry
+                            device_map = "cpu"
+                            time.sleep(2)
+                            continue
+                        else:
+                            # Last attempt - try CPU
+                            logger.warning("Final attempt: Trying CPU-only loading...")
+                            device_map = "cpu"
+                            time.sleep(2)
+                            continue
+                    elif attempt < max_retries - 1 and ("connection" in error_str or "incomplete" in error_str or "broken" in error_str or "read" in error_str):
                         wait_time = retry_delay * (2 ** attempt)  # Exponential backoff
                         logger.warning(f"Connection error loading model (attempt {attempt + 1}/{max_retries}): {e}")
                         logger.info(f"Retrying in {wait_time} seconds...")
@@ -192,9 +224,11 @@ def load_llama_model_and_tokenizer(
             logger.info(f"Loading model from: {model_path}")
             for attempt in range(max_retries):
                 try:
+                    # Use device_map (auto allows GPU/CPU offloading)
+                    load_device_map = device_map
                     model = AutoModelForCausalLM.from_pretrained(
                         model_path,
-                        device_map=device_map,
+                        device_map=load_device_map,
                         trust_remote_code=False,
                         torch_dtype=torch.float16,
                         resume_download=True,
@@ -203,7 +237,14 @@ def load_llama_model_and_tokenizer(
                     break
                 except Exception as e:
                     error_str = str(e).lower()
-                    if attempt < max_retries - 1 and ("connection" in error_str or "incomplete" in error_str or "broken" in error_str or "read" in error_str):
+                    # Allow CPU fallback if GPU fails
+                    if ("cuda" in error_str or "gpu" in error_str) and torch.cuda.is_available() and attempt == 0:
+                        logger.warning("GPU loading failed. Trying CPU-only loading...")
+                        device_map = "cpu"
+                        load_device_map = "cpu"
+                        time.sleep(2)
+                        continue
+                    elif attempt < max_retries - 1 and ("connection" in error_str or "incomplete" in error_str or "broken" in error_str or "read" in error_str):
                         wait_time = retry_delay * (2 ** attempt)  # Exponential backoff
                         logger.warning(f"Connection error loading model (attempt {attempt + 1}/{max_retries}): {e}")
                         logger.info(f"Retrying in {wait_time} seconds...")
@@ -293,10 +334,12 @@ def load_llama_model_and_tokenizer(
                     )
                     for attempt in range(max_retries):
                         try:
+                            # Use "auto" to allow GPU/CPU offloading as needed
+                            load_device_map = device_map
                             model = AutoModelForCausalLM.from_pretrained(
                                 model_name,
                                 quantization_config=bnb_config,
-                                device_map=device_map,
+                                device_map=load_device_map,
                                 trust_remote_code=False,
                                 torch_dtype=torch.float16,
                                 resume_download=True,
@@ -305,7 +348,14 @@ def load_llama_model_and_tokenizer(
                             break
                         except Exception as e:
                             error_str = str(e).lower()
-                            if attempt < max_retries - 1 and ("connection" in error_str or "incomplete" in error_str or "broken" in error_str or "read" in error_str):
+                            # Allow CPU fallback if GPU fails
+                            if ("dispatched on the cpu" in error_str or "dispatched on the disk" in error_str) and attempt == 0:
+                                logger.warning("GPU memory insufficient. Trying CPU-only loading...")
+                                device_map = "cpu"
+                                load_device_map = "cpu"
+                                time.sleep(2)
+                                continue
+                            elif attempt < max_retries - 1 and ("connection" in error_str or "incomplete" in error_str or "broken" in error_str or "read" in error_str):
                                 wait_time = retry_delay * (2 ** attempt)
                                 logger.warning(f"Connection error loading model (attempt {attempt + 1}/{max_retries}): {e}")
                                 logger.info(f"Retrying in {wait_time} seconds...")
@@ -315,9 +365,11 @@ def load_llama_model_and_tokenizer(
                 else:
                     for attempt in range(max_retries):
                         try:
+                            # Use device_map (auto or cpu) - allow CPU if GPU fails
+                            load_device_map = device_map
                             model = AutoModelForCausalLM.from_pretrained(
                                 model_name,
-                                device_map=device_map,
+                                device_map=load_device_map,
                                 trust_remote_code=False,
                                 torch_dtype=torch.float16,
                                 resume_download=True,
@@ -326,7 +378,14 @@ def load_llama_model_and_tokenizer(
                             break
                         except Exception as e:
                             error_str = str(e).lower()
-                            if attempt < max_retries - 1 and ("connection" in error_str or "incomplete" in error_str or "broken" in error_str or "read" in error_str):
+                            # Allow CPU fallback if GPU fails
+                            if ("cuda" in error_str or "gpu" in error_str) and torch.cuda.is_available() and attempt == 0:
+                                logger.warning("GPU loading failed. Trying CPU-only loading...")
+                                device_map = "cpu"
+                                load_device_map = "cpu"
+                                time.sleep(2)
+                                continue
+                            elif attempt < max_retries - 1 and ("connection" in error_str or "incomplete" in error_str or "broken" in error_str or "read" in error_str):
                                 wait_time = retry_delay * (2 ** attempt)
                                 logger.warning(f"Connection error loading model (attempt {attempt + 1}/{max_retries}): {e}")
                                 logger.info(f"Retrying in {wait_time} seconds...")
@@ -612,7 +671,7 @@ def fine_tune_llama(
         logging_steps=logging_steps,
         save_steps=save_steps,
         eval_steps=eval_steps if eval_dataset else None,
-        evaluation_strategy="steps" if eval_dataset else "no",
+        eval_strategy="steps" if eval_dataset else "no",
         save_total_limit=3,  # Keep only last 3 checkpoints
         load_best_model_at_end=True if eval_dataset else False,
         metric_for_best_model="eval_loss" if eval_dataset else None,
